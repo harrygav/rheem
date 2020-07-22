@@ -20,6 +20,7 @@
         <module>rheem-sqlite3</module>
         <module>rheem-giraph</module>
         <module>rheem-flink</module>
+        <module>rheem-hive</module>
     </modules>
 
 
