@@ -1,4 +1,4 @@
-package org.qcri.rheem.postgres.mapping;
+package org.qcri.rheem.hive.mapping;
 
 import org.qcri.rheem.basic.data.Record;
 import org.qcri.rheem.basic.operators.FilterOperator;
@@ -8,15 +8,15 @@ import org.qcri.rheem.core.mapping.PlanTransformation;
 import org.qcri.rheem.core.mapping.ReplacementSubplanFactory;
 import org.qcri.rheem.core.mapping.SubplanPattern;
 import org.qcri.rheem.core.types.DataSetType;
-import org.qcri.rheem.postgres.operators.PostgresFilterOperator;
-import org.qcri.rheem.postgres.platform.PostgresPlatform;
+import org.qcri.rheem.hive.operators.HiveFilterOperator;
+import org.qcri.rheem.hive.platform.HivePlatform;
 
 import java.util.Collection;
 import java.util.Collections;
 
 
 /**
- * Mapping from {@link FilterOperator} to {@link PostgresFilterOperator}.
+ * Mapping from {@link FilterOperator} to {@link HiveFilterOperator}.
  */
 @SuppressWarnings("unchecked")
 public class FilterMapping implements Mapping {
@@ -26,7 +26,7 @@ public class FilterMapping implements Mapping {
         return Collections.singleton(new PlanTransformation(
                 this.createSubplanPattern(),
                 this.createReplacementSubplanFactory(),
-                PostgresPlatform.getInstance()
+                HivePlatform.getInstance()
         ));
     }
 
@@ -39,7 +39,7 @@ public class FilterMapping implements Mapping {
 
     private ReplacementSubplanFactory createReplacementSubplanFactory() {
         return new ReplacementSubplanFactory.OfSingleOperators<FilterOperator>(
-                (matchedOperator, epoch) -> new PostgresFilterOperator(matchedOperator).at(epoch)
+                (matchedOperator, epoch) -> new HiveFilterOperator(matchedOperator).at(epoch)
         );
     }
 }

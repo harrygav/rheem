@@ -1,4 +1,4 @@
-package org.qcri.rheem.postgres.operators;
+package org.qcri.rheem.hive.operators;
 
 import org.qcri.rheem.basic.data.Record;
 import org.qcri.rheem.basic.operators.FilterOperator;
@@ -9,12 +9,12 @@ import org.qcri.rheem.jdbc.operators.JdbcFilterOperator;
 /**
  * PostgreSQL implementation of the {@link FilterOperator}.
  */
-public class PostgresFilterOperator extends JdbcFilterOperator implements PostgresExecutionOperator {
+public class HiveFilterOperator extends JdbcFilterOperator implements org.qcri.rheem.hive.operators.HiveExecutionOperator {
 
     /**
      * Creates a new instance.
      */
-    public PostgresFilterOperator(PredicateDescriptor<Record> predicateDescriptor) {
+    public HiveFilterOperator(PredicateDescriptor<Record> predicateDescriptor) {
         super(predicateDescriptor);
     }
 
@@ -23,12 +23,12 @@ public class PostgresFilterOperator extends JdbcFilterOperator implements Postgr
      *
      * @param that that should be copied
      */
-    public PostgresFilterOperator(FilterOperator<Record> that) {
+    public HiveFilterOperator(FilterOperator<Record> that) {
         super(that);
     }
 
     @Override
-    protected PostgresFilterOperator createCopy() {
-        return new PostgresFilterOperator(this);
+    protected HiveFilterOperator createCopy() {
+        return new HiveFilterOperator(this);
     }
 }

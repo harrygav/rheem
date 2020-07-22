@@ -1,4 +1,4 @@
-package org.qcri.rheem.postgres.operators;
+package org.qcri.rheem.hive.operators;
 
 import org.qcri.rheem.basic.operators.TableSource;
 import org.qcri.rheem.core.platform.ChannelDescriptor;
@@ -9,14 +9,14 @@ import java.util.List;
 /**
  * PostgreSQL implementation for the {@link TableSource}.
  */
-public class PostgresTableSource extends JdbcTableSource implements PostgresExecutionOperator {
+public class HiveTableSource extends JdbcTableSource implements HiveExecutionOperator {
 
     /**
      * Creates a new instance.
      *
      * @see TableSource#TableSource(String, String...)
      */
-    public PostgresTableSource(String tableName, String... columnNames) {
+    public HiveTableSource(String tableName, String... columnNames) {
         super(tableName, columnNames);
     }
 
@@ -25,7 +25,7 @@ public class PostgresTableSource extends JdbcTableSource implements PostgresExec
      *
      * @param that that should be copied
      */
-    public PostgresTableSource(JdbcTableSource that) {
+    public HiveTableSource(JdbcTableSource that) {
         super(that);
     }
 

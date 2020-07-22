@@ -1,4 +1,4 @@
-package org.qcri.rheem.postgres.mapping;
+package org.qcri.rheem.hive.mapping;
 
 import org.qcri.rheem.core.mapping.Mapping;
 

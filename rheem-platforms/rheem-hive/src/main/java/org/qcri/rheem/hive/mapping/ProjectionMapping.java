@@ -1,4 +1,4 @@
-package org.qcri.rheem.postgres.mapping;
+package org.qcri.rheem.hive.mapping;
 
 import org.qcri.rheem.basic.data.Record;
 import org.qcri.rheem.basic.function.ProjectionDescriptor;
@@ -9,15 +9,15 @@ import org.qcri.rheem.core.mapping.PlanTransformation;
 import org.qcri.rheem.core.mapping.ReplacementSubplanFactory;
 import org.qcri.rheem.core.mapping.SubplanPattern;
 import org.qcri.rheem.core.types.DataSetType;
-import org.qcri.rheem.postgres.operators.PostgresProjectionOperator;
-import org.qcri.rheem.postgres.platform.PostgresPlatform;
+import org.qcri.rheem.hive.operators.HiveProjectionOperator;
+import org.qcri.rheem.hive.platform.HivePlatform;
 
 import java.util.Collection;
 import java.util.Collections;
 
 /**
  * /**
- * Mapping from {@link MapOperator} to {@link PostgresProjectionOperator}.
+ * Mapping from {@link MapOperator} to {@link HiveProjectionOperator}.
  */
 @SuppressWarnings("unchecked")
 public class ProjectionMapping implements Mapping {
@@ -27,7 +27,7 @@ public class ProjectionMapping implements Mapping {
         return Collections.singleton(new PlanTransformation(
                 this.createSubplanPattern(),
                 this.createReplacementSubplanFactory(),
-                PostgresPlatform.getInstance()
+                HivePlatform.getInstance()
         ));
     }
 
@@ -48,7 +48,7 @@ public class ProjectionMapping implements Mapping {
 
     private ReplacementSubplanFactory createReplacementSubplanFactory() {
         return new ReplacementSubplanFactory.OfSingleOperators<MapOperator<Record, Record>>(
-                (matchedOperator, epoch) -> new PostgresProjectionOperator(matchedOperator).at(epoch)
+                (matchedOperator, epoch) -> new HiveProjectionOperator(matchedOperator).at(epoch)
         );
     }
 }
