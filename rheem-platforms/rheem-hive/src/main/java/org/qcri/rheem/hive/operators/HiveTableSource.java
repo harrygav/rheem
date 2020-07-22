@@ -7,7 +7,7 @@ import org.qcri.rheem.jdbc.operators.JdbcTableSource;
 import java.util.List;
 
 /**
- * PostgreSQL implementation for the {@link TableSource}.
+ * Apache Hive implementation for the {@link TableSource}.
  */
 public class HiveTableSource extends JdbcTableSource implements HiveExecutionOperator {
 

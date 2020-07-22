@@ -7,7 +7,7 @@ import org.qcri.rheem.basic.operators.MapOperator;
 import org.qcri.rheem.jdbc.operators.JdbcProjectionOperator;
 
 /**
- * PostgreSQL implementation of the {@link FilterOperator}.
+ * Apache Hive implementation of the {@link FilterOperator}.
  */
 public class HiveProjectionOperator extends JdbcProjectionOperator implements org.qcri.rheem.hive.operators.HiveExecutionOperator {
 
