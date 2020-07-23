@@ -21,6 +21,8 @@
         <module>rheem-giraph</module>
         <module>rheem-flink</module>
         <module>rheem-hive</module>
+        <module>rheem-hbase</module>
+        <module>rheem-phoenix</module>
     </modules>
 
 
