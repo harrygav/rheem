@@ -144,9 +144,9 @@ public class HBaseExecutor extends ExecutorTemplate {
             scan.setFilter(new FilterList(FilterList.Operator.MUST_PASS_ALL, filters));
 
             tipChannelInstance.setHbaseScan(scan);
-
+            executionState.register(tipChannelInstance);
             //execution operator
-            ResultScanner scanner = table.getScanner(scan);
+            /*ResultScanner scanner = table.getScanner(scan);
             for (Result result : scanner) {
                 System.out.println("Row: ");
 
@@ -154,7 +154,7 @@ public class HBaseExecutor extends ExecutorTemplate {
                     System.out.println("Col: " + Bytes.toString(result.getValue(family, ((String) field).getBytes())));
                 }
 
-            }
+            }*/
         } catch (IOException e) {
 
             System.out.println(e.getMessage());

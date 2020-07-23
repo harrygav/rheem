@@ -31,13 +31,13 @@ public class HbaseExample {
                 .withJobName("Hbase example")
                 .withUdfJarOf(HbaseExample.class);
 
-        Collection<Record> nation_regionkeys = planBuilder
+        FilterDataQuantaBuilder<Record> nation_regionkeys = planBuilder
                 .readTable(new HBaseTableSource("nation", "n_regionkey", "n_name"))
                 .projectRecords(new String[]{"n_regionkey", "n_name"})
                 //.filter(t -> Integer.parseInt(t.getString(0)) == 4);
-                .filter(t -> Integer.parseInt(t.getString(0)) == 4).withSqlUdf("n_regionkey=4")
-                .collect();
-        /*FilterDataQuantaBuilder<Record> regions = planBuilder.readTextFile("file:///home/harry/workspace/polydb/src/main/resources/sales/region2.csv")
+                .filter(t -> Integer.parseInt(t.getString(0)) == 4).withSqlUdf("n_regionkey=0");
+
+        FilterDataQuantaBuilder<Record> regions = planBuilder.readTextFile("file:///home/harry/workspace/polydb/src/main/resources/sales/region2.csv")
                 .map(t -> {
                     String[] str = t.split(",");
                     Record rec = new Record(str[0], str[1], str[2]);
@@ -48,9 +48,9 @@ public class HbaseExample {
         Collection<Record> nation_regions = nation_regionkeys
                 .join(t -> t.getField(0), regions, t -> t.getField(0))
                 .map(t -> new Record(t.field0.getString(1), t.field1.getString(1)))
-                .collect();*/
+                .collect();
 
-        for (Record rkey : nation_regionkeys
+        for (Record rkey : nation_regions
         ) {
             System.out.println(rkey);
         }
