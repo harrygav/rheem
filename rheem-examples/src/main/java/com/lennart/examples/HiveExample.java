@@ -28,8 +28,9 @@ public class HiveExample {
 
         FilterDataQuantaBuilder<Record> data = planBuilder
                 .readTable(new HiveTableSource("u_data", "userid", "movieid", "rating", "unixtime"))
-                .projectRecords(new String[]{"movieid", "rating"})
-                .filter(t -> Double.parseDouble(t.getString(1)) > 6);
+                //.filter(t -> Integer.parseInt(t.getString(0)) < 234)
+                .projectRecords(new String[]{"movieid", "rating", "unixtime"})
+                .filter(t -> Double.parseDouble(t.getString(1)) >= 5);
 
         Collection<Record> output = data.collect();
 
