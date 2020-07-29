@@ -83,7 +83,7 @@ public class SqlToStreamOperator extends UnaryToUnaryOperator<Record, Record> im
                 .createDatabaseDescriptor(executor.getConfiguration())
                 .createJdbcConnection();
 
-        Iterator<Record> resultSetIterator = new ResultSetIterator(connection, input.getSqlQuery());
+        Iterator<Record> resultSetIterator = new ResultSetIterator(connection, input.getSqlQuery().replace(";",""));
         Spliterator<Record> resultSetSpliterator = Spliterators.spliteratorUnknownSize(resultSetIterator, 0);
         Stream<Record> resultSetStream = StreamSupport.stream(resultSetSpliterator, false);
 
