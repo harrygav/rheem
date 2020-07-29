@@ -2,7 +2,9 @@ package com.lennart.examples;
 
 import org.qcri.rheem.api.FilterDataQuantaBuilder;
 import org.qcri.rheem.api.JavaPlanBuilder;
+import org.qcri.rheem.api.JoinDataQuantaBuilder;
 import org.qcri.rheem.basic.data.Record;
+import org.qcri.rheem.basic.data.Tuple2;
 import org.qcri.rheem.core.api.Configuration;
 import org.qcri.rheem.core.api.RheemContext;
 import org.qcri.rheem.hive.operators.HiveTableSource;
@@ -26,16 +28,23 @@ public class HiveExample {
                 .withJobName("Hive Example")
                 .withUdfJarOf(HiveExample.class);
 
+        FilterDataQuantaBuilder<Record> users = planBuilder
+                .readTable(new HiveTableSource("u_user", "userid", "age", "gender", "occupation", "zip"))
+                .projectRecords(new String[]{"userid", "age", "gender"})
+                .filter(t -> true);
+
         FilterDataQuantaBuilder<Record> data = planBuilder
                 .readTable(new HiveTableSource("u_data", "userid", "movieid", "rating", "unixtime"))
-                //.filter(t -> Integer.parseInt(t.getString(0)) < 234)
-                .projectRecords(new String[]{"movieid", "rating", "unixtime"})
+                .projectRecords(new String[]{"movieid", "rating"})
                 .filter(t -> Double.parseDouble(t.getString(1)) >= 5);
 
-        Collection<Record> output = data.collect();
+        JoinDataQuantaBuilder<Record, Record, Double> join = data
+                .join(t -> t.getDouble(0), users, t -> t.getDouble(0));
 
-        for (Record r : output) {
-            System.out.println(r);
+        Collection<Tuple2<Record, Record>> output = join.collect();
+
+        for (Tuple2 t : output) {
+            System.out.println(t.field0 + " - " + t.field1);
         }
     }
 }

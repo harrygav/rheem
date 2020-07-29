@@ -18,9 +18,7 @@ import org.qcri.rheem.core.util.fs.FileSystem;
 import org.qcri.rheem.core.util.fs.FileSystems;
 import org.qcri.rheem.jdbc.channels.SqlQueryChannel;
 import org.qcri.rheem.jdbc.compiler.FunctionCompiler;
-import org.qcri.rheem.jdbc.operators.JdbcExecutionOperator;
-import org.qcri.rheem.jdbc.operators.JdbcFilterOperator;
-import org.qcri.rheem.jdbc.operators.JdbcProjectionOperator;
+import org.qcri.rheem.jdbc.operators.*;
 import org.qcri.rheem.jdbc.platform.JdbcPlatformTemplate;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
@@ -59,32 +57,44 @@ public class JdbcExecutor extends ExecutorTemplate {
     @Override
     public void execute(ExecutionStage stage, OptimizationContext optimizationContext, ExecutionState executionState) {
         // TODO: Load ChannelInstances from executionState? (as of now there is no input into PostgreSQL).
-        Collection<?> startTasks = stage.getStartTasks();
-        Collection<?> termTasks = stage.getTerminalTasks();
+        Collection<ExecutionTask> startTasks = stage.getStartTasks();
+        Collection<ExecutionTask> termTasks = stage.getTerminalTasks();
 
         // Verify that we can handle this instance.
-        assert startTasks.size() == 1 : "Invalid jdbc stage: multiple sources are not currently supported";
-        ExecutionTask startTask = (ExecutionTask) startTasks.toArray()[0];
+        // assert startTasks.size() == 1 : "Invalid jdbc stage: multiple sources are not currently supported";
+        // ExecutionTask startTask = (ExecutionTask) startTasks.toArray()[0];
         assert termTasks.size() == 1 : "Invalid JDBC stage: multiple terminal tasks are not currently supported.";
         ExecutionTask termTask = (ExecutionTask) termTasks.toArray()[0];
-        assert startTask.getOperator() instanceof TableSource : "Invalid JDBC stage: Start task has to be a TableSource";
+        startTasks.forEach(task -> {
+            assert task.getOperator() instanceof TableSource : "Invalid JDBC stage: Start task has to be a TableSource";
+        });
+        // assert startTask.getOperator() instanceof TableSource : "Invalid JDBC stage: Start task has to be a TableSource";
+
+        ExecutionTask firstTask = (ExecutionTask) startTasks.toArray()[0];
+
 
         // Extract the different types of ExecutionOperators from the stage.
-        TableSource tableOp = (TableSource) startTask.getOperator();
-        SqlQueryChannel.Instance tipChannelInstance = this.instantiateOutboundChannel(startTask, optimizationContext);
-        Collection<ExecutionTask> filterTasks = new ArrayList<>(4);
-        ExecutionTask projectionTask = null;
+        Collection<ExecutionTask> tableSources = new ArrayList<>();
+        Collection<ExecutionTask> joinTasks = new ArrayList<>();
+        Collection<ExecutionTask> filterTasks = new ArrayList<>();
+        Collection<ExecutionTask> projectionTasks = new ArrayList<>();
         Set<ExecutionTask> allTasks = stage.getAllTasks();
-        assert allTasks.size() <= 3;
-        ExecutionTask nextTask = this.findJdbcExecutionOperatorTaskInStage(startTask, stage);
+
+        // SELECT, FROM, WHERE, JOIN currently implemented.
+        assert allTasks.size() <= 4;
+
+        SqlQueryChannel.Instance tipChannelInstance = this.instantiateOutboundChannel(firstTask, optimizationContext);
+        ExecutionTask nextTask = this.findJdbcExecutionOperatorTaskInStage(firstTask, stage);
         while (nextTask != null) {
             // Evaluate the nextTask.
-            if (nextTask.getOperator() instanceof JdbcFilterOperator) {
+            if (nextTask.getOperator() instanceof JdbcTableSource) {
+                tableSources.add(nextTask);
+            } else if (nextTask.getOperator() instanceof JdbcJoinOperator) {
+                joinTasks.add(nextTask);
+            } else if (nextTask.getOperator() instanceof JdbcFilterOperator) {
                 filterTasks.add(nextTask);
             } else if (nextTask.getOperator() instanceof JdbcProjectionOperator) {
-                assert projectionTask == null; //Allow one projection operator per stage for now.
-                projectionTask = nextTask;
-
+                projectionTasks.add(nextTask);
             } else {
                 throw new RheemException(String.format("Unsupported JDBC execution task %s", nextTask.toString()));
             }
@@ -96,15 +106,21 @@ public class JdbcExecutor extends ExecutorTemplate {
             nextTask = this.findJdbcExecutionOperatorTaskInStage(nextTask, stage);
         }
 
+        System.out.println("Table Sources: " + tableSources);
+        System.out.println("Joins: " + joinTasks);
+        System.out.println("Filters: " + filterTasks);
+        System.out.println("Projections: " + projectionTasks);
+
+        // TODO: Adjust query template
         // Create the SQL query.
-        String tableName = this.getSqlClause(tableOp);
-        Collection<String> conditions = filterTasks.stream()
-                .map(ExecutionTask::getOperator)
-                .map(this::getSqlClause)
-                .collect(Collectors.toList());
-        String projection = projectionTask == null ? "*" : this.getSqlClause(projectionTask.getOperator());
-        String query = this.createSqlQuery(tableName, conditions, projection);
-        tipChannelInstance.setSqlQuery(query);
+//        String tableName = this.getSqlClause(tableSources);
+//        Collection<String> conditions = filterTasks.stream()
+//                .map(ExecutionTask::getOperator)
+//                .map(this::getSqlClause)
+//                .collect(Collectors.toList());
+//        String projection = projectionTasks == null ? "*" : this.getSqlClause(projectionTasks.getOperator());
+//        String query = this.createSqlQuery(tableName, conditions, projection);
+//        tipChannelInstance.setSqlQuery(query);
 
         // Return the tipChannelInstance.
         executionState.register(tipChannelInstance);
@@ -179,7 +195,8 @@ public class JdbcExecutor extends ExecutorTemplate {
                 separator = " AND ";
             }
         }
-        sb.append(';');
+        //sb.append(';');
+        System.out.println("SB: " + sb.toString());
         return sb.toString();
     }
 
