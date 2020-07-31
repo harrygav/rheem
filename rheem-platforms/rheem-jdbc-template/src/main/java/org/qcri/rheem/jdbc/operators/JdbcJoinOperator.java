@@ -5,7 +5,6 @@ import org.qcri.rheem.core.api.Configuration;
 import org.qcri.rheem.core.function.TransformationDescriptor;
 import org.qcri.rheem.core.optimizer.costs.LoadProfileEstimator;
 import org.qcri.rheem.core.optimizer.costs.LoadProfileEstimators;
-import org.qcri.rheem.core.plan.rheemplan.ExecutionOperator;
 import org.qcri.rheem.core.types.DataSetType;
 import org.qcri.rheem.jdbc.compiler.FunctionCompiler;
 
@@ -32,9 +31,9 @@ public abstract class JdbcJoinOperator<InputType0, InputType1, KeyType>
 
     @Override
     public String createSqlClause(Connection connection, FunctionCompiler compiler) {
-        System.out.println(keyDescriptor0);
-        System.out.println(keyDescriptor1);
-        return "This is a join";
+        String sqlImplementation = this.getSqlImplementation();
+        assert sqlImplementation != null;
+        return sqlImplementation;
     }
 
     @Override

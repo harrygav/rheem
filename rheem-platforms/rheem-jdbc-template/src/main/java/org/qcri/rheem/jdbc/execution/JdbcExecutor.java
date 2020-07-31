@@ -61,17 +61,10 @@ public class JdbcExecutor extends ExecutorTemplate {
         Collection<ExecutionTask> termTasks = stage.getTerminalTasks();
 
         // Verify that we can handle this instance.
-        // assert startTasks.size() == 1 : "Invalid jdbc stage: multiple sources are not currently supported";
-        // ExecutionTask startTask = (ExecutionTask) startTasks.toArray()[0];
-        assert termTasks.size() == 1 : "Invalid JDBC stage: multiple terminal tasks are not currently supported.";
-        ExecutionTask termTask = (ExecutionTask) termTasks.toArray()[0];
         startTasks.forEach(task -> {
             assert task.getOperator() instanceof TableSource : "Invalid JDBC stage: Start task has to be a TableSource";
         });
-        // assert startTask.getOperator() instanceof TableSource : "Invalid JDBC stage: Start task has to be a TableSource";
-
-        ExecutionTask firstTask = (ExecutionTask) startTasks.toArray()[0];
-
+        assert termTasks.size() == 1 : "Invalid JDBC stage: multiple terminal tasks are not currently supported.";
 
         // Extract the different types of ExecutionOperators from the stage.
         Collection<ExecutionTask> tableSources = new ArrayList<>();
@@ -80,47 +73,66 @@ public class JdbcExecutor extends ExecutorTemplate {
         Collection<ExecutionTask> projectionTasks = new ArrayList<>();
         Set<ExecutionTask> allTasks = stage.getAllTasks();
 
-        // SELECT, FROM, WHERE, JOIN currently implemented.
-        assert allTasks.size() <= 4;
+        SqlQueryChannel.Instance tipChannelInstance = null;
+        for (ExecutionTask startTask : startTasks) {
+            tableSources.add(startTask);
+            tipChannelInstance = this.instantiateOutboundChannel(startTask, optimizationContext);
+            ExecutionTask nextTask = this.findJdbcExecutionOperatorTaskInStage(startTask, stage);
 
-        SqlQueryChannel.Instance tipChannelInstance = this.instantiateOutboundChannel(firstTask, optimizationContext);
-        ExecutionTask nextTask = this.findJdbcExecutionOperatorTaskInStage(firstTask, stage);
-        while (nextTask != null) {
-            // Evaluate the nextTask.
-            if (nextTask.getOperator() instanceof JdbcTableSource) {
-                tableSources.add(nextTask);
-            } else if (nextTask.getOperator() instanceof JdbcJoinOperator) {
-                joinTasks.add(nextTask);
-            } else if (nextTask.getOperator() instanceof JdbcFilterOperator) {
-                filterTasks.add(nextTask);
-            } else if (nextTask.getOperator() instanceof JdbcProjectionOperator) {
-                projectionTasks.add(nextTask);
-            } else {
-                throw new RheemException(String.format("Unsupported JDBC execution task %s", nextTask.toString()));
+            while (nextTask != null) {
+                // Evaluate the nextTask.
+                if (nextTask.getOperator() instanceof JdbcTableSource) {
+                    throw new RheemException(String.format(
+                            "A TableSource operator cannot be applied on another TableSource operator: %s",
+                            nextTask.toString()));
+                } else if (nextTask.getOperator() instanceof JdbcJoinOperator) {
+                    if (!joinTasks.contains(nextTask)) {
+                        joinTasks.add(nextTask);
+                    }
+                } else if (nextTask.getOperator() instanceof JdbcFilterOperator) {
+                    filterTasks.add(nextTask);
+                } else if (nextTask.getOperator() instanceof JdbcProjectionOperator) {
+                    projectionTasks.add(nextTask);
+                } else {
+                    throw new RheemException(String.format(
+                            "Unsupported JDBC execution task %s", nextTask.toString()));
+                }
+
+                // Move the tipChannelInstance.
+                tipChannelInstance = this.instantiateOutboundChannel(nextTask, optimizationContext, tipChannelInstance);
+
+                // Go to the next nextTask.
+                nextTask = this.findJdbcExecutionOperatorTaskInStage(nextTask, stage);
             }
-
-            // Move the tipChannelInstance.
-            tipChannelInstance = this.instantiateOutboundChannel(nextTask, optimizationContext, tipChannelInstance);
-
-            // Go to the next nextTask.
-            nextTask = this.findJdbcExecutionOperatorTaskInStage(nextTask, stage);
         }
 
+        System.out.println("Start tasks: " + startTasks);
         System.out.println("Table Sources: " + tableSources);
         System.out.println("Joins: " + joinTasks);
         System.out.println("Filters: " + filterTasks);
-        System.out.println("Projections: " + projectionTasks);
+        System.out.println("Projection: " + projectionTasks);
+        System.out.println("All tasks: " + allTasks);
 
-        // TODO: Adjust query template
         // Create the SQL query.
-//        String tableName = this.getSqlClause(tableSources);
-//        Collection<String> conditions = filterTasks.stream()
-//                .map(ExecutionTask::getOperator)
-//                .map(this::getSqlClause)
-//                .collect(Collectors.toList());
-//        String projection = projectionTasks == null ? "*" : this.getSqlClause(projectionTasks.getOperator());
-//        String query = this.createSqlQuery(tableName, conditions, projection);
-//        tipChannelInstance.setSqlQuery(query);
+        Collection<String> tables = tableSources.stream()
+                .map(ExecutionTask::getOperator)
+                .map(this::getSqlClause)
+                .collect(Collectors.toList());
+        Collection<String> conditions = filterTasks.stream()
+                .map(ExecutionTask::getOperator)
+                .map(this::getSqlClause)
+                .collect(Collectors.toList());
+        Collection<String> joins = joinTasks.stream()
+                .map(ExecutionTask::getOperator)
+                .map(this::getSqlClause)
+                .collect(Collectors.toList());
+        conditions.addAll(joins);
+        Collection<String> projections = projectionTasks.stream()
+                .map(ExecutionTask::getOperator)
+                .map(this::getSqlClause)
+                .collect(Collectors.toList());
+        String query = this.createSqlQuery(tables, conditions, projections);
+        tipChannelInstance.setSqlQuery(query);
 
         // Return the tipChannelInstance.
         executionState.register(tipChannelInstance);
@@ -179,14 +191,35 @@ public class JdbcExecutor extends ExecutorTemplate {
     /**
      * Creates a SQL query.
      *
-     * @param tableName  the table to be queried
+     * @param tables  the tables to be queried
      * @param conditions conditions for the {@code WHERE} clause
-     * @param projection projection for the {@code SELECT} clause
+     * @param projections projections for the {@code SELECT} clause
      * @return the SQL query
      */
-    protected String createSqlQuery(String tableName, Collection<String> conditions, String projection) {
+    protected String createSqlQuery(Collection<String> tables,
+                                    Collection<String> conditions,
+                                    Collection<String> projections) {
         StringBuilder sb = new StringBuilder(1000);
-        sb.append("SELECT ").append(projection).append(" FROM ").append(tableName);
+        if (!projections.isEmpty()){
+            sb.append("SELECT ");
+            String separator = "";
+            for (String projection : projections) {
+                sb.append(separator).append(projection);
+                separator = ", ";
+            }
+        } else {
+            throw new RheemException("No projections were given for the SQL query.");
+        }
+        if (!tables.isEmpty()){
+            sb.append(" FROM ");
+            String separator = "";
+            for (String table : tables) {
+                sb.append(separator).append(table);
+                separator = ", ";
+            }
+        } else {
+            throw new RheemException("No table sources were given for the SQL query.");
+        }
         if (!conditions.isEmpty()) {
             sb.append(" WHERE ");
             String separator = "";

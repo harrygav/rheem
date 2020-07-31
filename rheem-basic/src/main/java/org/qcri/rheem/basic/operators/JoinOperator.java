@@ -27,6 +27,8 @@ public class JoinOperator<InputType0, InputType1, Key>
 
     protected final TransformationDescriptor<InputType1, Key> keyDescriptor1;
 
+    private String sqlImplementation;
+
     public JoinOperator(FunctionDescriptor.SerializableFunction<InputType0, Key> keyExtractor0,
                         FunctionDescriptor.SerializableFunction<InputType1, Key> keyExtractor1,
                         Class<InputType0> input0Class,
@@ -66,6 +68,7 @@ public class JoinOperator<InputType0, InputType1, Key>
         super(that);
         this.keyDescriptor0 = that.getKeyDescriptor0();
         this.keyDescriptor1 = that.getKeyDescriptor1();
+        this.sqlImplementation = that.sqlImplementation;
     }
 
     public TransformationDescriptor<InputType0, Key> getKeyDescriptor0() {
@@ -76,6 +79,26 @@ public class JoinOperator<InputType0, InputType1, Key>
         return this.keyDescriptor1;
     }
 
+    /**
+     * This function is not built to last. It is thought to help out devising programs while we are still figuring
+     * out how to express functions in a platform-independent way.
+     *
+     * @return a SQL predicate applicable in a {@code WHERE} clause representing this predicate
+     */
+    public String getSqlImplementation() {
+        return this.sqlImplementation;
+    }
+
+    /**
+     * This function is not built to last. It is thought to help out devising programs while we are still figuring
+     * out how to express functions in a platform-independent way.
+     *
+     * @param sqlImplementation a SQL predicate applicable in a {@code WHERE} clause representing this predicate
+     */
+    public JoinOperator<InputType0, InputType1, Key> withSqlImplementation(String sqlImplementation) {
+        this.sqlImplementation = sqlImplementation;
+        return this;
+    }
 
     @Override
     public Optional<CardinalityEstimator> createCardinalityEstimator(

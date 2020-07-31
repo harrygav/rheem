@@ -5,22 +5,19 @@ import org.qcri.rheem.api.JavaPlanBuilder;
 import org.qcri.rheem.api.JoinDataQuantaBuilder;
 import org.qcri.rheem.basic.data.Record;
 import org.qcri.rheem.basic.data.Tuple2;
-import org.qcri.rheem.core.api.Configuration;
 import org.qcri.rheem.core.api.RheemContext;
 import org.qcri.rheem.hive.operators.HiveTableSource;
+import org.qcri.rheem.hive.platform.HivePlatform;
 import org.qcri.rheem.java.Java;
 import org.qcri.rheem.hive.Hive;
 
 import java.util.Collection;
 
 public class HiveExample {
-    public static void main(String[] args) {
-        Configuration config = new Configuration();
-        config.setProperty("rheem.hive.jdbc.url", "jdbc:hive2://localhost:10000/default");
-        config.setProperty("rheem.hive.jdbc.user", "lbhm");
-        config.setProperty("rheem.hive.jdbc.password", "");
+    private static HivePlatform hivePlatform;
 
-        RheemContext rheemContext = new RheemContext(config)
+    public static void main(String[] args) {
+        RheemContext rheemContext = new RheemContext()
                 .withPlugin(Java.basicPlugin())
                 .withPlugin(Hive.plugin());
 
@@ -29,22 +26,33 @@ public class HiveExample {
                 .withUdfJarOf(HiveExample.class);
 
         FilterDataQuantaBuilder<Record> users = planBuilder
-                .readTable(new HiveTableSource("u_user", "userid", "age", "gender", "occupation", "zip"))
-                .projectRecords(new String[]{"userid", "age", "gender"})
-                .filter(t -> true);
+                .readTable(new HiveTableSource("u_user",
+                        "u_user.userid", "u_user.age", "u_user.gender", "u_user.occupation", "u_user.zip"))
+                .projectRecords(new String[]{"u_user.userid", "u_user.age", "u_user.gender", "u_user.occupation", "u_user.zip"})
+                .filter(t -> t.getString(2).equals("M"))
+                .withSqlUdf("u_user.gender = 'M'");
 
         FilterDataQuantaBuilder<Record> data = planBuilder
-                .readTable(new HiveTableSource("u_data", "userid", "movieid", "rating", "unixtime"))
-                .projectRecords(new String[]{"movieid", "rating"})
-                .filter(t -> Double.parseDouble(t.getString(1)) >= 5);
+                .readTable(new HiveTableSource("u_data",
+                        "u_data.userid", "u_data.movieid", "u_data.rating", "uu_data.nixtime"))
+                .projectRecords(new String[]{"u_data.userid", "u_data.movieid", "u_data.rating"})
+                .filter(t -> t.getInt(3) >= 5)
+                .withSqlUdf("u_data.rating >= 5");
 
         JoinDataQuantaBuilder<Record, Record, Double> join = data
-                .join(t -> t.getDouble(0), users, t -> t.getDouble(0));
+                .join(t -> t.getDouble(0), users, t -> t.getDouble(0))
+                .withSqlUdf("u_data.userid = u_user.userid")
+                .withTargetPlatform(hivePlatform);
 
         Collection<Tuple2<Record, Record>> output = join.collect();
 
         for (Tuple2 t : output) {
             System.out.println(t.field0 + " - " + t.field1);
         }
+
+//        Collection<Record> output = users.collect();
+//        for (Record r : output) {
+//            System.out.println(r);
+//        }
     }
 }
