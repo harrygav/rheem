@@ -179,7 +179,9 @@ public class JdbcExecutor extends ExecutorTemplate {
                 separator = " AND ";
             }
         }
-        sb.append(';');
+        // for different jdbc implementations
+        if (!(getPlatform().getName().toLowerCase().equals("phoenix") || getPlatform().getName().toLowerCase().equals("hive")))
+            sb.append(';');
         return sb.toString();
     }
 
