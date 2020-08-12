@@ -13,17 +13,15 @@ import org.qcri.rheem.hive.Hive;
 
 import java.util.Collection;
 
-public class HiveExample {
-    private static HivePlatform hivePlatform;
-
+public class HiveScalaAPI {
     public static void main(String[] args) {
         RheemContext rheemContext = new RheemContext()
                 .withPlugin(Java.basicPlugin())
                 .withPlugin(Hive.plugin());
 
         JavaPlanBuilder planBuilder = new JavaPlanBuilder(rheemContext)
-                .withJobName("Hive Example")
-                .withUdfJarOf(HiveExample.class);
+                .withJobName("Scala API Hive Example")
+                .withUdfJarOf(HiveScalaAPI.class);
 
         FilterDataQuantaBuilder<Record> users = planBuilder
                 .readTable(new HiveTableSource("u_user",
@@ -41,18 +39,23 @@ public class HiveExample {
 
         JoinDataQuantaBuilder<Record, Record, Double> join = data
                 .join(t -> t.getDouble(0), users, t -> t.getDouble(0))
-                .withSqlUdf("u_data.userid = u_user.userid")
-                .withTargetPlatform(hivePlatform);
+                .withSqlUdf("u_data.userid = u_user.userid");
 
         Collection<Tuple2<Record, Record>> output = join.collect();
 
-        for (Tuple2 t : output) {
-            System.out.println(t.field0 + " - " + t.field1);
+        // Our reflection hack makes collect() return Records even though the type annotation says Tuple2.
+        // Therefore, we can only access the results as objects and use a type cast.
+        for (Object o : output) {
+            Record r = (Record) o;
+            System.out.println(r);
         }
 
-//        Collection<Record> output = users.collect();
+        // This will not work unless the hack in org.qcri.rheem.api.JoinDataQuantaBuilder.build is fixed.
 //        for (Record r : output) {
 //            System.out.println(r);
+//        }
+//        for (Tuple2<Record, Record> t : output) {
+//            System.out.println(t.field0 + " - " + t.field1);
 //        }
     }
 }

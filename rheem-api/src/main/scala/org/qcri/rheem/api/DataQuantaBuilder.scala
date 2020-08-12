@@ -1318,9 +1318,9 @@ class JoinDataQuantaBuilder[In0, In1, Key](inputDataQuanta0: DataQuantaBuilder[_
     val inputDataQuanta1TypeClass = inputDataQuanta1.dataQuanta().output.getType.getDataUnitType.getTypeClass
     val isRecord = inputDataQuanta1TypeClass.getName == classOf[Record].getName
     if (isRecord) {
-      inputDataQuanta0.dataQuanta().joinJava(keyUdf0, inputDataQuanta1.dataQuanta(), keyUdf1)(inputDataQuanta1.recordClassTag, this.keyTag)
+      inputDataQuanta0.dataQuanta().joinJava(keyUdf0, inputDataQuanta1.dataQuanta(), keyUdf1, this.sqlUdf)(inputDataQuanta1.recordClassTag, this.keyTag)
     } else {
-      inputDataQuanta0.dataQuanta().joinJava(keyUdf0, inputDataQuanta1.dataQuanta(), keyUdf1)(inputDataQuanta1.classTag, this.keyTag)
+      inputDataQuanta0.dataQuanta().joinJava(keyUdf0, inputDataQuanta1.dataQuanta(), keyUdf1, this.sqlUdf)(inputDataQuanta1.classTag, this.keyTag)
     }
   }
 }

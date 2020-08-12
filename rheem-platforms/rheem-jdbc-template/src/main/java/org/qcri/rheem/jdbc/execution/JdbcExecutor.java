@@ -106,13 +106,6 @@ public class JdbcExecutor extends ExecutorTemplate {
             }
         }
 
-        System.out.println("Start tasks: " + startTasks);
-        System.out.println("Table Sources: " + tableSources);
-        System.out.println("Joins: " + joinTasks);
-        System.out.println("Filters: " + filterTasks);
-        System.out.println("Projection: " + projectionTasks);
-        System.out.println("All tasks: " + allTasks);
-
         // Create the SQL query.
         Collection<String> tables = tableSources.stream()
                 .map(ExecutionTask::getOperator)
@@ -211,7 +204,7 @@ public class JdbcExecutor extends ExecutorTemplate {
             throw new RheemException("No projections were given for the SQL query.");
         }
         if (!tables.isEmpty()){
-            sb.append(" FROM ");
+            sb.append("\nFROM ");
             String separator = "";
             for (String table : tables) {
                 sb.append(separator).append(table);
@@ -221,7 +214,7 @@ public class JdbcExecutor extends ExecutorTemplate {
             throw new RheemException("No table sources were given for the SQL query.");
         }
         if (!conditions.isEmpty()) {
-            sb.append(" WHERE ");
+            sb.append("\nWHERE ");
             String separator = "";
             for (String condition : conditions) {
                 sb.append(separator).append(condition);
@@ -229,7 +222,7 @@ public class JdbcExecutor extends ExecutorTemplate {
             }
         }
         //sb.append(';');
-        System.out.println("SB: " + sb.toString());
+        System.out.println("SQL Query:\n" + sb.toString());
         return sb.toString();
     }
 
