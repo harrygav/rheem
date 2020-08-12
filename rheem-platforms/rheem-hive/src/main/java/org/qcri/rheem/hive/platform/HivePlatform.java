@@ -8,7 +8,7 @@ import org.qcri.rheem.jdbc.platform.JdbcPlatformTemplate;
  */
 public class HivePlatform extends JdbcPlatformTemplate {
 
-    private static final String PLATFORM_NAME = "Apache Hive";
+    private static final String PLATFORM_NAME = "Hive";
 
     private static final String CONFIG_NAME = "hive";
 
