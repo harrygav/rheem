@@ -97,18 +97,19 @@ public class HBaseExecutor extends ExecutorTemplate {
             tipChannelInstance.setTable(table);
             Scan scan = new Scan();
 
+            byte[] family = "cf".getBytes();
 
             //project operator
             ArrayList<String> cols = new ArrayList<>();
-            byte[] family = "cf".getBytes();
-            HBaseProjectionOperator projectionOperator = (HBaseProjectionOperator) projectionTask.getOperator();
-            ProjectionDescriptor projectionDescriptor = (ProjectionDescriptor) projectionOperator.getFunctionDescriptor();
-            for (Object field : projectionDescriptor.getFieldNames()) {
-                scan.addColumn(family, ((String) field).getBytes());
-                cols.add((String) field);
+            if (projectionTask != null) {
+                HBaseProjectionOperator projectionOperator = (HBaseProjectionOperator) projectionTask.getOperator();
+                ProjectionDescriptor projectionDescriptor = (ProjectionDescriptor) projectionOperator.getFunctionDescriptor();
+                for (Object field : projectionDescriptor.getFieldNames()) {
+                    scan.addColumn(family, ((String) field).getBytes());
+                    cols.add((String) field);
+                }
+                tipChannelInstance.setProjectedFields(cols);
             }
-            tipChannelInstance.setProjectedFields(cols);
-
             ArrayList<Filter> filters = new ArrayList<>();
             //select operator
             for (ExecutionTask filterTask : filterTasks) {
