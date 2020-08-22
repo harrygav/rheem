@@ -201,10 +201,10 @@ public class JdbcExecutor extends ExecutorTemplate {
                 separator = ", ";
             }
         } else {
-            throw new RheemException("No projections were given for the SQL query.");
+            sb.append("SELECT *");
         }
         if (!tables.isEmpty()){
-            sb.append("\nFROM ");
+            sb.append(" FROM ");
             String separator = "";
             for (String table : tables) {
                 sb.append(separator).append(table);
@@ -214,7 +214,7 @@ public class JdbcExecutor extends ExecutorTemplate {
             throw new RheemException("No table sources were given for the SQL query.");
         }
         if (!conditions.isEmpty()) {
-            sb.append("\nWHERE ");
+            sb.append(" WHERE ");
             String separator = "";
             for (String condition : conditions) {
                 sb.append(separator).append(condition);

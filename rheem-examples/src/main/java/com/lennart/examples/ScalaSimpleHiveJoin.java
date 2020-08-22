@@ -7,13 +7,12 @@ import org.qcri.rheem.basic.data.Record;
 import org.qcri.rheem.basic.data.Tuple2;
 import org.qcri.rheem.core.api.RheemContext;
 import org.qcri.rheem.hive.operators.HiveTableSource;
-import org.qcri.rheem.hive.platform.HivePlatform;
 import org.qcri.rheem.java.Java;
 import org.qcri.rheem.hive.Hive;
 
 import java.util.Collection;
 
-public class HiveScalaAPI {
+public class ScalaSimpleHiveJoin {
     public static void main(String[] args) {
         RheemContext rheemContext = new RheemContext()
                 .withPlugin(Java.basicPlugin())
@@ -21,7 +20,7 @@ public class HiveScalaAPI {
 
         JavaPlanBuilder planBuilder = new JavaPlanBuilder(rheemContext)
                 .withJobName("Scala API Hive Example")
-                .withUdfJarOf(HiveScalaAPI.class);
+                .withUdfJarOf(ScalaSimpleHiveJoin.class);
 
         FilterDataQuantaBuilder<Record> users = planBuilder
                 .readTable(new HiveTableSource("u_user",
@@ -43,7 +42,7 @@ public class HiveScalaAPI {
 
         Collection<Tuple2<Record, Record>> output = join.collect();
 
-        // Our reflection hack makes collect() return Records even though the type annotation says Tuple2.
+        // The SqlToStreamOperator returns Records even though the JoinOperator is annotated to return a Tuple2.
         // Therefore, we can only access the results as objects and use a type cast.
         for (Object o : output) {
             Record r = (Record) o;
