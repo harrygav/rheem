@@ -18,9 +18,7 @@ import org.qcri.rheem.core.util.fs.FileSystem;
 import org.qcri.rheem.core.util.fs.FileSystems;
 import org.qcri.rheem.jdbc.channels.SqlQueryChannel;
 import org.qcri.rheem.jdbc.compiler.FunctionCompiler;
-import org.qcri.rheem.jdbc.operators.JdbcExecutionOperator;
-import org.qcri.rheem.jdbc.operators.JdbcFilterOperator;
-import org.qcri.rheem.jdbc.operators.JdbcProjectionOperator;
+import org.qcri.rheem.jdbc.operators.*;
 import org.qcri.rheem.jdbc.platform.JdbcPlatformTemplate;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
@@ -59,51 +57,74 @@ public class JdbcExecutor extends ExecutorTemplate {
     @Override
     public void execute(ExecutionStage stage, OptimizationContext optimizationContext, ExecutionState executionState) {
         // TODO: Load ChannelInstances from executionState? (as of now there is no input into PostgreSQL).
-        Collection<?> startTasks = stage.getStartTasks();
-        Collection<?> termTasks = stage.getTerminalTasks();
+        Collection<ExecutionTask> startTasks = stage.getStartTasks();
+        Collection<ExecutionTask> termTasks = stage.getTerminalTasks();
 
         // Verify that we can handle this instance.
-        assert startTasks.size() == 1 : "Invalid jdbc stage: multiple sources are not currently supported";
-        ExecutionTask startTask = (ExecutionTask) startTasks.toArray()[0];
+        startTasks.forEach(task -> {
+            assert task.getOperator() instanceof TableSource : "Invalid JDBC stage: Start task has to be a TableSource";
+        });
         assert termTasks.size() == 1 : "Invalid JDBC stage: multiple terminal tasks are not currently supported.";
-        ExecutionTask termTask = (ExecutionTask) termTasks.toArray()[0];
-        assert startTask.getOperator() instanceof TableSource : "Invalid JDBC stage: Start task has to be a TableSource";
 
         // Extract the different types of ExecutionOperators from the stage.
-        TableSource tableOp = (TableSource) startTask.getOperator();
-        SqlQueryChannel.Instance tipChannelInstance = this.instantiateOutboundChannel(startTask, optimizationContext);
-        Collection<ExecutionTask> filterTasks = new ArrayList<>(4);
-        ExecutionTask projectionTask = null;
+        Collection<ExecutionTask> tableSources = new ArrayList<>();
+        Collection<ExecutionTask> joinTasks = new ArrayList<>();
+        Collection<ExecutionTask> filterTasks = new ArrayList<>();
+        Collection<ExecutionTask> projectionTasks = new ArrayList<>();
         Set<ExecutionTask> allTasks = stage.getAllTasks();
-        assert allTasks.size() <= 3;
-        ExecutionTask nextTask = this.findJdbcExecutionOperatorTaskInStage(startTask, stage);
-        while (nextTask != null) {
-            // Evaluate the nextTask.
-            if (nextTask.getOperator() instanceof JdbcFilterOperator) {
-                filterTasks.add(nextTask);
-            } else if (nextTask.getOperator() instanceof JdbcProjectionOperator) {
-                assert projectionTask == null; //Allow one projection operator per stage for now.
-                projectionTask = nextTask;
 
-            } else {
-                throw new RheemException(String.format("Unsupported JDBC execution task %s", nextTask.toString()));
+        SqlQueryChannel.Instance tipChannelInstance = null;
+        for (ExecutionTask startTask : startTasks) {
+            tableSources.add(startTask);
+            tipChannelInstance = this.instantiateOutboundChannel(startTask, optimizationContext);
+            ExecutionTask nextTask = this.findJdbcExecutionOperatorTaskInStage(startTask, stage);
+
+            while (nextTask != null) {
+                // Evaluate the nextTask.
+                if (nextTask.getOperator() instanceof JdbcTableSource) {
+                    throw new RheemException(String.format(
+                            "A TableSource operator cannot be applied on another TableSource operator: %s",
+                            nextTask.toString()));
+                } else if (nextTask.getOperator() instanceof JdbcJoinOperator) {
+                    if (!joinTasks.contains(nextTask)) {
+                        joinTasks.add(nextTask);
+                    }
+                } else if (nextTask.getOperator() instanceof JdbcFilterOperator) {
+                    filterTasks.add(nextTask);
+                } else if (nextTask.getOperator() instanceof JdbcProjectionOperator) {
+                    projectionTasks.add(nextTask);
+                } else {
+                    throw new RheemException(String.format(
+                            "Unsupported JDBC execution task %s", nextTask.toString()));
+                }
+
+                // Move the tipChannelInstance.
+                tipChannelInstance = this.instantiateOutboundChannel(nextTask, optimizationContext, tipChannelInstance);
+
+                // Go to the next nextTask.
+                nextTask = this.findJdbcExecutionOperatorTaskInStage(nextTask, stage);
             }
-
-            // Move the tipChannelInstance.
-            tipChannelInstance = this.instantiateOutboundChannel(nextTask, optimizationContext, tipChannelInstance);
-
-            // Go to the next nextTask.
-            nextTask = this.findJdbcExecutionOperatorTaskInStage(nextTask, stage);
         }
 
         // Create the SQL query.
-        String tableName = this.getSqlClause(tableOp);
+        Collection<String> tables = tableSources.stream()
+                .map(ExecutionTask::getOperator)
+                .map(this::getSqlClause)
+                .collect(Collectors.toList());
         Collection<String> conditions = filterTasks.stream()
                 .map(ExecutionTask::getOperator)
                 .map(this::getSqlClause)
                 .collect(Collectors.toList());
-        String projection = projectionTask == null ? "*" : this.getSqlClause(projectionTask.getOperator());
-        String query = this.createSqlQuery(tableName, conditions, projection);
+        Collection<String> joins = joinTasks.stream()
+                .map(ExecutionTask::getOperator)
+                .map(this::getSqlClause)
+                .collect(Collectors.toList());
+        conditions.addAll(joins);
+        Collection<String> projections = projectionTasks.stream()
+                .map(ExecutionTask::getOperator)
+                .map(this::getSqlClause)
+                .collect(Collectors.toList());
+        String query = this.createSqlQuery(tables, conditions, projections);
         tipChannelInstance.setSqlQuery(query);
 
         // Return the tipChannelInstance.
@@ -163,14 +184,35 @@ public class JdbcExecutor extends ExecutorTemplate {
     /**
      * Creates a SQL query.
      *
-     * @param tableName  the table to be queried
+     * @param tables  the tables to be queried
      * @param conditions conditions for the {@code WHERE} clause
-     * @param projection projection for the {@code SELECT} clause
+     * @param projections projections for the {@code SELECT} clause
      * @return the SQL query
      */
-    protected String createSqlQuery(String tableName, Collection<String> conditions, String projection) {
+    protected String createSqlQuery(Collection<String> tables,
+                                    Collection<String> conditions,
+                                    Collection<String> projections) {
         StringBuilder sb = new StringBuilder(1000);
-        sb.append("SELECT ").append(projection).append(" FROM ").append(tableName);
+        if (!projections.isEmpty()){
+            sb.append("SELECT ");
+            String separator = "";
+            for (String projection : projections) {
+                sb.append(separator).append(projection);
+                separator = ", ";
+            }
+        } else {
+            sb.append("SELECT *");
+        }
+        if (!tables.isEmpty()){
+            sb.append(" FROM ");
+            String separator = "";
+            for (String table : tables) {
+                sb.append(separator).append(table);
+                separator = ", ";
+            }
+        } else {
+            throw new RheemException("No table sources were given for the SQL query.");
+        }
         if (!conditions.isEmpty()) {
             sb.append(" WHERE ");
             String separator = "";
@@ -179,9 +221,14 @@ public class JdbcExecutor extends ExecutorTemplate {
                 separator = " AND ";
             }
         }
-        // for different jdbc implementations
+
+        // Print SQL output for testing
+        System.out.println("SQL Query:\n" + sb.toString());
+
+        // The semicolon needs to be omitted on some platforms
         if (!(getPlatform().getName().toLowerCase().equals("phoenix") || getPlatform().getName().toLowerCase().equals("hive")))
             sb.append(';');
+
         return sb.toString();
     }
 

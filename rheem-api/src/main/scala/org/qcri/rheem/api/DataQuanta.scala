@@ -432,13 +432,14 @@ class DataQuanta[Out: ClassTag](val operator: ElementaryOperator, outputIndex: I
   def joinJava[ThatOut: ClassTag, Key: ClassTag]
   (thisKeyUdf: SerializableFunction[Out, Key],
    that: DataQuanta[ThatOut],
-   thatKeyUdf: SerializableFunction[ThatOut, Key])
+   thatKeyUdf: SerializableFunction[ThatOut, Key],
+   sqlUdf: String = null)
   : DataQuanta[org.qcri.rheem.basic.data.Tuple2[Out, ThatOut]] = {
     require(this.planBuilder eq that.planBuilder, s"$this and $that must use the same plan builders.")
     val joinOperator = new JoinOperator(
       new TransformationDescriptor(thisKeyUdf, basicDataUnitType[Out], basicDataUnitType[Key]),
       new TransformationDescriptor(thatKeyUdf, basicDataUnitType[ThatOut], basicDataUnitType[Key])
-    )
+    ).withSqlImplementation(sqlUdf)
     this.connectTo(joinOperator, 0)
     that.connectTo(joinOperator, 1)
     joinOperator
