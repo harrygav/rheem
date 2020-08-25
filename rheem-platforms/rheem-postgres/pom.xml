@@ -12,21 +12,32 @@
     <artifactId>rheem-postgres</artifactId>
 
     <dependencies>
+        <!-- Rheem dependencies -->
+        <!-- Rheem version changed to 0.3.0 due to Maven availability -->
         <dependency>
-            <groupId>org.postgresql</groupId>
-            <artifactId>postgresql</artifactId>
+            <groupId>org.qcri.rheem</groupId>
+            <artifactId>rheem-core</artifactId>
+            <!--<version>0.3.0</version>-->
+            <version>0.5.0-SNAPSHOT</version>
         </dependency>
         <dependency>
             <groupId>org.qcri.rheem</groupId>
             <artifactId>rheem-basic</artifactId>
-            <version>0.3.0</version>
+            <!--<version>0.3.0</version>-->
+            <version>0.5.0-SNAPSHOT</version>
         </dependency>
         <dependency>
             <groupId>org.qcri.rheem</groupId>
             <artifactId>rheem-jdbc-template</artifactId>
-            <version>0.3.0</version>
+            <!--<version>0.3.0</version>-->
+            <version>0.5.0-SNAPSHOT</version>
         </dependency>
+
+        <!-- Postgres dependencies -->
+        <dependency>
+            <groupId>org.postgresql</groupId>
+            <artifactId>postgresql</artifactId>
+        </dependency>
+
     </dependencies>
-
-
 </project>
