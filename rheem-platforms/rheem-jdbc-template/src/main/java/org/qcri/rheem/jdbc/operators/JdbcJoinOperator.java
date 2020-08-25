@@ -38,7 +38,7 @@ public abstract class JdbcJoinOperator<InputType0, InputType1, KeyType>
 
     @Override
     public String getLoadProfileEstimatorConfigurationKey() {
-        return "rheem.flink.join.load";
+        return String.format("rheem.%s.join.load", this.getPlatform().getPlatformId());
     }
 
     @Override
