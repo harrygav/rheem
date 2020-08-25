@@ -120,13 +120,31 @@ public class HBaseToStreamOperator extends UnaryToUnaryOperator<Record, Record> 
             } else {
 
                 byte[] family = "cf".getBytes();
-                Object[] values = new Object[this.projectedFields.size()];
                 Result curRes = this.resultIterator.next();
-                for (int i = 0; i < this.projectedFields.size(); i++) {
+                Object[] values;
+                if (this.projectedFields == null) {
 
-                    values[i] = (Bytes.toString(curRes.getValue(family, this.projectedFields.get(i).getBytes())));
+                    NavigableMap familyMap = curRes.getFamilyMap(Bytes.toBytes("cf"));
+                    values = new Object[familyMap.size()];
+                    //TODO: check order of record fields
+                    int i = familyMap.size();
+                    for (Object col : familyMap.values()) {
+                        values[i - 1] = Bytes.toString(((byte[]) col));
+                        i--;
+                    }
+
+
+                } else {
+                    values = new Object[this.projectedFields.size()];
+
+                    for (int i = 0; i < this.projectedFields.size(); i++) {
+
+                        values[i] = (Bytes.toString(curRes.getValue(family, this.projectedFields.get(i).getBytes())));
+                    }
+
                 }
                 this.next = new Record(values);
+
             }
         }
 

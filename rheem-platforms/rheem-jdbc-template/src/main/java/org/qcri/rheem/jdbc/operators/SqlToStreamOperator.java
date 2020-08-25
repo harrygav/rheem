@@ -83,7 +83,7 @@ public class SqlToStreamOperator extends UnaryToUnaryOperator<Record, Record> im
                 .createDatabaseDescriptor(executor.getConfiguration())
                 .createJdbcConnection();
 
-        Iterator<Record> resultSetIterator = new ResultSetIterator(connection, input.getSqlQuery().replace(";",""));
+        Iterator<Record> resultSetIterator = new ResultSetIterator(connection, input.getSqlQuery());
         Spliterator<Record> resultSetSpliterator = Spliterators.spliteratorUnknownSize(resultSetIterator, 0);
         Stream<Record> resultSetStream = StreamSupport.stream(resultSetSpliterator, false);
 
@@ -92,8 +92,8 @@ public class SqlToStreamOperator extends UnaryToUnaryOperator<Record, Record> im
         ExecutionLineageNode queryLineageNode = new ExecutionLineageNode(operatorContext);
         queryLineageNode.add(LoadProfileEstimators.createFromSpecification(
                 String.format("rheem.%s.sqltostream.load.query", this.jdbcPlatform.getPlatformId()),
-                        executor.getConfiguration()
-                ));
+                executor.getConfiguration()
+        ));
         queryLineageNode.addPredecessor(input.getLineage());
         ExecutionLineageNode outputLineageNode = new ExecutionLineageNode(operatorContext);
         outputLineageNode.add(LoadProfileEstimators.createFromSpecification(

@@ -36,5 +36,6 @@ public class HivePlugin implements Plugin {
 
     @Override
     public void setProperties(Configuration configuration) {
+        // Nothing to do, because we already configured the properties in #configureDefaults(...).
     }
 }

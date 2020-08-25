@@ -12,7 +12,8 @@ public class Mappings {
 
     public static final Collection<Mapping> ALL = Arrays.asList(
             new FilterMapping(),
-            new ProjectionMapping()
+            new ProjectionMapping(),
+            new JoinMapping()
     );
 
 }

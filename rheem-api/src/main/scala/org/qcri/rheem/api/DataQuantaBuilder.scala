@@ -120,6 +120,8 @@ trait DataQuantaBuilder[+This <: DataQuantaBuilder[_, Out], Out] extends Logging
     */
   protected[api] implicit def classTag: ClassTag[Out] = ClassTag(outputTypeTrap.typeClass)
 
+  protected[api] implicit def recordClassTag: ClassTag[Out] = ClassTag(classOf[Record])
+
   /**
     * Feed the built [[DataQuanta]] into a [[MapOperator]].
     *
@@ -1207,6 +1209,9 @@ class JoinDataQuantaBuilder[In0, In1, Key](inputDataQuanta0: DataQuantaBuilder[_
   /** [[LoadEstimator]] to estimate the RAM load of the [[keyUdf1]]. */
   private var keyUdf1RamEstimator: LoadEstimator = _
 
+  /** SQL UDF implementing the join predicate. */
+  private var sqlUdf: String = _
+
   // Try to infer the type classes from the UDFs.
   locally {
     val parameters = ReflectionUtils.getTypeParameters(keyUdf0.getClass, classOf[SerializableFunction[_, _]])
@@ -1286,6 +1291,17 @@ class JoinDataQuantaBuilder[In0, In1, Key](inputDataQuanta0: DataQuantaBuilder[_
   }
 
   /**
+   * Add a SQL implementation of the join.
+   *
+   * @param sqlUdf a SQL condition that can be plugged into a `WHERE` clause and contains the join attributes
+   * @return this instance
+   */
+  def withSqlUdf(sqlUdf: String) = {
+    this.sqlUdf = sqlUdf
+    this
+  }
+
+  /**
     * Assemble the joined elements to new elements.
     *
     * @param udf produces a joined element from two joinable elements
@@ -1296,9 +1312,17 @@ class JoinDataQuantaBuilder[In0, In1, Key](inputDataQuanta0: DataQuantaBuilder[_
       override def apply(joinTuple: RT2[In0, In1]): NewOut = udf.apply(joinTuple.field0, joinTuple.field1)
     })
 
-  override protected def build =
-    inputDataQuanta0.dataQuanta().joinJava(keyUdf0, inputDataQuanta1.dataQuanta(), keyUdf1)(inputDataQuanta1.classTag, this.keyTag)
-
+  override protected def build = {
+    // Hacky way to check if inputDataQuanta1 is Record or not
+    // TODO: fix the reflection issue
+    val inputDataQuanta1TypeClass = inputDataQuanta1.dataQuanta().output.getType.getDataUnitType.getTypeClass
+    val isRecord = inputDataQuanta1TypeClass.getName == classOf[Record].getName
+    if (isRecord) {
+      inputDataQuanta0.dataQuanta().joinJava(keyUdf0, inputDataQuanta1.dataQuanta(), keyUdf1, this.sqlUdf)(inputDataQuanta1.recordClassTag, this.keyTag)
+    } else {
+      inputDataQuanta0.dataQuanta().joinJava(keyUdf0, inputDataQuanta1.dataQuanta(), keyUdf1, this.sqlUdf)(inputDataQuanta1.classTag, this.keyTag)
+    }
+  }
 }
 
 /**

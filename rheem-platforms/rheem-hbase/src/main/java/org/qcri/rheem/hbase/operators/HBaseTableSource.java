@@ -2,7 +2,6 @@ package org.qcri.rheem.hbase.operators;
 
 import org.qcri.rheem.basic.operators.TableSource;
 import org.qcri.rheem.core.platform.ChannelDescriptor;
-import org.qcri.rheem.jdbc.operators.JdbcTableSource;
 
 import java.util.List;
 
@@ -25,9 +24,9 @@ public class HBaseTableSource extends TableSource implements HBaseExecutionOpera
      *
      * @param that that should be copied
      */
-    /*public HBaseTableSource(JdbcTableSource that) {
+    public HBaseTableSource(TableSource that) {
         super(that);
-    }*/
+    }
 
     @Override
     public List<ChannelDescriptor> getSupportedInputChannels(int index) {
