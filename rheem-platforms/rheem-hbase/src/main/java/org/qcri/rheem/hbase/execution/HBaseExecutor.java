@@ -3,13 +3,11 @@ package org.qcri.rheem.hbase.execution;
 import org.apache.hadoop.conf.Configuration;
 import org.apache.hadoop.hbase.CompareOperator;
 import org.apache.hadoop.hbase.HBaseConfiguration;
-import org.apache.hadoop.hbase.MasterNotRunningException;
 import org.apache.hadoop.hbase.TableName;
 import org.apache.hadoop.hbase.client.*;
 import org.apache.hadoop.hbase.filter.Filter;
 import org.apache.hadoop.hbase.filter.FilterList;
 import org.apache.hadoop.hbase.filter.SingleColumnValueFilter;
-import org.apache.hadoop.hbase.util.Bytes;
 import org.qcri.rheem.basic.function.ProjectionDescriptor;
 import org.qcri.rheem.basic.operators.TableSource;
 import org.qcri.rheem.core.api.Job;
@@ -19,8 +17,6 @@ import org.qcri.rheem.core.optimizer.OptimizationContext;
 import org.qcri.rheem.core.plan.executionplan.Channel;
 import org.qcri.rheem.core.plan.executionplan.ExecutionStage;
 import org.qcri.rheem.core.plan.executionplan.ExecutionTask;
-import org.qcri.rheem.core.plan.rheemplan.ExecutionOperator;
-import org.qcri.rheem.core.platform.CrossPlatformExecutor;
 import org.qcri.rheem.core.platform.ExecutionState;
 import org.qcri.rheem.core.platform.ExecutorTemplate;
 import org.qcri.rheem.core.platform.Platform;
@@ -30,17 +26,11 @@ import org.qcri.rheem.hbase.operators.HBaseExecutionOperator;
 import org.qcri.rheem.hbase.operators.HBaseFilterOperator;
 import org.qcri.rheem.hbase.operators.HBaseProjectionOperator;
 import org.qcri.rheem.hbase.platform.HBasePlatform;
-import org.qcri.rheem.jdbc.channels.SqlQueryChannel;
-import org.qcri.rheem.jdbc.operators.JdbcExecutionOperator;
-import org.qcri.rheem.jdbc.operators.JdbcFilterOperator;
-import org.qcri.rheem.jdbc.operators.JdbcProjectionOperator;
 
 import java.io.IOException;
 import java.util.ArrayList;
 import java.util.Collection;
-import java.util.List;
 import java.util.Set;
-import java.util.stream.Collectors;
 
 public class HBaseExecutor extends ExecutorTemplate {
 
@@ -90,13 +80,6 @@ public class HBaseExecutor extends ExecutorTemplate {
             nextTask = this.findHBaseExecutionOperatorTaskInStage(nextTask, stage);
         }
 
-        /*Collection<String> conditions = filterTasks.stream()
-                .map(ExecutionTask::getOperator)
-                .map(this::getSqlClause)
-                .collect(Collectors.toList());
-        String projection = projectionTask == null ? "*" : this.getSqlClause(projectionTask.getOperator());
-        String query = this.createSqlQuery(tableName, conditions, projection);
-        tipChannelInstance.setSqlQuery(query);*/
 
         // Return the tipChannelInstance.
         executionState.register(tipChannelInstance);
@@ -114,18 +97,19 @@ public class HBaseExecutor extends ExecutorTemplate {
             tipChannelInstance.setTable(table);
             Scan scan = new Scan();
 
+            byte[] family = "cf".getBytes();
 
             //project operator
             ArrayList<String> cols = new ArrayList<>();
-            byte[] family = "cf".getBytes();
-            HBaseProjectionOperator projectionOperator = (HBaseProjectionOperator) projectionTask.getOperator();
-            ProjectionDescriptor projectionDescriptor = (ProjectionDescriptor) projectionOperator.getFunctionDescriptor();
-            for (Object field : projectionDescriptor.getFieldNames()) {
-                scan.addColumn(family, ((String) field).getBytes());
-                cols.add((String) field);
+            if (projectionTask != null) {
+                HBaseProjectionOperator projectionOperator = (HBaseProjectionOperator) projectionTask.getOperator();
+                ProjectionDescriptor projectionDescriptor = (ProjectionDescriptor) projectionOperator.getFunctionDescriptor();
+                for (Object field : projectionDescriptor.getFieldNames()) {
+                    scan.addColumn(family, ((String) field).getBytes());
+                    cols.add((String) field);
+                }
+                tipChannelInstance.setProjectedFields(cols);
             }
-            tipChannelInstance.setProjectedFields(cols);
-
             ArrayList<Filter> filters = new ArrayList<>();
             //select operator
             for (ExecutionTask filterTask : filterTasks) {

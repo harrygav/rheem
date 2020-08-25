@@ -63,7 +63,12 @@ public abstract class JdbcTableSource extends TableSource implements JdbcExecuti
                         .createJdbcConnection()) {
 
                     // Query the table cardinality.
-                    final String sql = String.format("SELECT count(*) FROM %s;", JdbcTableSource.this.getTableName());
+                    final String sql;
+                    if (!(getPlatform().getName().toLowerCase().equals("phoenix") || getPlatform().getName().toLowerCase().equals("hive")))
+                        sql = String.format("SELECT count(*) FROM %s;", JdbcTableSource.this.getTableName());
+                    else
+                        sql = String.format("SELECT count(*) FROM %s", JdbcTableSource.this.getTableName());
+
                     final ResultSet resultSet = connection.createStatement().executeQuery(sql);
                     if (!resultSet.next()) {
                         throw new SQLException("No query result for \"" + sql + "\".");

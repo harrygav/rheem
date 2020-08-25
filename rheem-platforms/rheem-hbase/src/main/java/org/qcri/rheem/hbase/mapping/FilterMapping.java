@@ -31,8 +31,8 @@ public class FilterMapping implements Mapping {
     }
 
     private SubplanPattern createSubplanPattern() {
-        final OperatorPattern<FilterOperator> operatorPattern = new OperatorPattern<>(
-                "filter", new FilterOperator<>(null, DataSetType.none()),
+        final OperatorPattern<FilterOperator<Record>> operatorPattern = new OperatorPattern<>(
+                "filter", new FilterOperator<>(null, DataSetType.createDefault(Record.class)),
                 false
         );
         return SubplanPattern.createSingleton(operatorPattern);

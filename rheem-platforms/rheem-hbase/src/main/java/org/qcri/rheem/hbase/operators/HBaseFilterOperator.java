@@ -9,13 +9,13 @@ import org.qcri.rheem.core.plan.rheemplan.ExecutionOperator;
 /**
  * HBase implementation of the {@link FilterOperator}.
  */
-public class HBaseFilterOperator<InputType> extends FilterOperator<InputType> implements HBaseExecutionOperator {
+public class HBaseFilterOperator extends FilterOperator<Record> implements HBaseExecutionOperator {
 
-    public HBaseFilterOperator(PredicateDescriptor<InputType> predicateDescriptor) {
+    public HBaseFilterOperator(PredicateDescriptor<Record> predicateDescriptor) {
         super(predicateDescriptor);
     }
 
-    public HBaseFilterOperator(FilterOperator<InputType> that) {
+    public HBaseFilterOperator(FilterOperator<Record> that) {
         super(that);
     }
 
