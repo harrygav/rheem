@@ -57,8 +57,11 @@ public class JdbcExecutor extends ExecutorTemplate {
     @Override
     public void execute(ExecutionStage stage, OptimizationContext optimizationContext, ExecutionState executionState) {
         // TODO: Load ChannelInstances from executionState? (as of now there is no input into PostgreSQL).
+        Set<ExecutionTask> allTasks = stage.getAllTasks();
         Collection<ExecutionTask> startTasks = stage.getStartTasks();
         Collection<ExecutionTask> termTasks = stage.getTerminalTasks();
+
+        System.out.println(allTasks);
 
         // Verify that we can handle this instance.
         startTasks.forEach(task -> {
@@ -71,7 +74,6 @@ public class JdbcExecutor extends ExecutorTemplate {
         Collection<ExecutionTask> joinTasks = new ArrayList<>();
         Collection<ExecutionTask> filterTasks = new ArrayList<>();
         Collection<ExecutionTask> projectionTasks = new ArrayList<>();
-        Set<ExecutionTask> allTasks = stage.getAllTasks();
 
         SqlQueryChannel.Instance tipChannelInstance = null;
         for (ExecutionTask startTask : startTasks) {
@@ -170,7 +172,7 @@ public class JdbcExecutor extends ExecutorTemplate {
      *
      * @param task                       whose outbound {@link SqlQueryChannel} should be instantiated
      * @param optimizationContext        provides information about the {@link ExecutionTask}
-     * @param predecessorChannelInstance preceeding {@link SqlQueryChannel.Instance} to keep track of lineage
+     * @param predecessorChannelInstance preceding {@link SqlQueryChannel.Instance} to keep track of lineage
      * @return the {@link SqlQueryChannel.Instance}
      */
     private SqlQueryChannel.Instance instantiateOutboundChannel(ExecutionTask task,
@@ -184,8 +186,8 @@ public class JdbcExecutor extends ExecutorTemplate {
     /**
      * Creates a SQL query.
      *
-     * @param tables  the tables to be queried
-     * @param conditions conditions for the {@code WHERE} clause
+     * @param tables      the tables to be queried
+     * @param conditions  conditions for the {@code WHERE} clause
      * @param projections projections for the {@code SELECT} clause
      * @return the SQL query
      */
@@ -193,7 +195,7 @@ public class JdbcExecutor extends ExecutorTemplate {
                                     Collection<String> conditions,
                                     Collection<String> projections) {
         StringBuilder sb = new StringBuilder(1000);
-        if (!projections.isEmpty()){
+        if (!projections.isEmpty()) {
             sb.append("SELECT ");
             String separator = "";
             for (String projection : projections) {
@@ -203,7 +205,7 @@ public class JdbcExecutor extends ExecutorTemplate {
         } else {
             sb.append("SELECT *");
         }
-        if (!tables.isEmpty()){
+        if (!tables.isEmpty()) {
             sb.append(" FROM ");
             String separator = "";
             for (String table : tables) {

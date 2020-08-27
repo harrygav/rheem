@@ -13,11 +13,15 @@ import org.qcri.rheem.hive.Hive;
 import org.qcri.rheem.hive.operators.HiveTableSource;
 import org.qcri.rheem.hive.platform.HivePlatform;
 import org.qcri.rheem.java.Java;
+import org.qcri.rheem.spark.Spark;
+import org.qcri.rheem.spark.operators.SparkTableSink;
+import org.qcri.rheem.spark.operators.SparkTextFileSink;
+import org.qcri.rheem.spark.platform.SparkPlatform;
 
-public class JavaSimpleHiveJoin {
+import java.util.Properties;
+
+public class SparkTableSinkExample {
     public static void main(String[] args) {
-
-        Platform hivePlatform = HivePlatform.getInstance();
 
         // Hive table.
         Operator u_users = new HiveTableSource("u_user");
@@ -26,7 +30,7 @@ public class JavaSimpleHiveJoin {
 
         PredicateDescriptor pred = new PredicateDescriptor(t -> true, Record.class).withSqlImplementation("u_user.age > 25");
         Operator selection = new FilterOperator<Record>(pred);
-        selection.addTargetPlatform(hivePlatform);
+        selection.addTargetPlatform(HivePlatform.getInstance());
         projection.connectTo(0, selection, 0);
 
         // CSV file.
@@ -51,11 +55,26 @@ public class JavaSimpleHiveJoin {
             Record r1 = (Record) t.getField1();
             return new Record(r0.getInt(0), r0.getInt(1), r0.getString(2), r1.getDouble(1));
         }, Tuple2.class, Record.class);
+        //map2.addTargetPlatform(SparkPlatform.getInstance());
         join.connectTo(0, map2, 0);
 
+        // Sink connection properties.
+        Properties props = new Properties();
+        props.setProperty("url", "jdbc:hive2://localhost:10000");
+        props.setProperty("database", "default");
+        props.setProperty("user", "lbhm");
+        props.setProperty("password", "");
+        props.setProperty("driver", "org.apache.hive.jdbc.HiveDriver");
+
         // Sink.
-        Operator sink = LocalCallbackSink.createStdoutSink(Record.class);
-//        Operator sink = new TextFileSink<>("file:///home/lbhm/hive/jointest.csv", Record.class);
+        //Operator sink = new SparkTableSink(props, "spark_tablesink_test", "append");
+
+        // Non-table Operator for testing purposes.
+        Operator sink = new TextFileSink<Record>("/home/lbhm/Desktop/test.txt", Record.class);
+        sink.addTargetPlatform(SparkPlatform.getInstance());
+        
+        // This does not work because of type mismatch
+        //Operator sink = new SparkTableSink(props, "spark_tablesink_test", "append", "userid", "age", "gender", "score");
         map2.connectTo(0, sink, 0);
 
         // Create RheemPlan
@@ -64,7 +83,8 @@ public class JavaSimpleHiveJoin {
         // Create context and execute.
         RheemContext rheemContext = new RheemContext()
                 .withPlugin(Java.basicPlugin())
-                .withPlugin(Hive.plugin());
+                .withPlugin(Hive.plugin())
+                .withPlugin(Spark.basicPlugin());
 
         Job job = rheemContext.createJob("Java API Join Example", plan);
         job.execute();
