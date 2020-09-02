@@ -61,8 +61,6 @@ public class JdbcExecutor extends ExecutorTemplate {
         Collection<ExecutionTask> startTasks = stage.getStartTasks();
         Collection<ExecutionTask> termTasks = stage.getTerminalTasks();
 
-        System.out.println(allTasks);
-
         // Verify that we can handle this instance.
         startTasks.forEach(task -> {
             assert task.getOperator() instanceof TableSource : "Invalid JDBC stage: Start task has to be a TableSource";

@@ -14,6 +14,8 @@ public class TableSink extends UnarySink<Record> {
 
     private String tableName;
 
+    private String[] columnNames;
+
     private Properties props;
 
     /**
@@ -21,16 +23,16 @@ public class TableSink extends UnarySink<Record> {
      *
      * @param props        database connection properties
      * @param tableName    name of the table to be written
-     * @param columnNames  names of the columns in the tables; can be omitted but allows to inject schema information
-     *                     into Rheem, so as to allow specific optimizations
+     * @param columnNames  names of the columns in the tables
      */
     public TableSink(Properties props, String tableName, String... columnNames) {
-        this(props, tableName, createOutputDataSetType(columnNames));
+        this(props, tableName, columnNames, DataSetType.createDefault(Record.class));
     }
 
-    public TableSink(Properties props, String tableName, DataSetType<Record> type) {
+    public TableSink(Properties props, String tableName, String[] columnNames, DataSetType<Record> type) {
         super(type);
         this.tableName = tableName;
+        this.columnNames = columnNames;
         this.props = props;
     }
 
@@ -46,11 +48,19 @@ public class TableSink extends UnarySink<Record> {
     }
 
     public String getTableName() {
-        return tableName;
+        return this.tableName;
+    }
+
+    protected void setColumnNames(String[] columnNames) {
+        this.columnNames = columnNames;
+    }
+
+    public String[] getColumnNames() {
+        return this.columnNames;
     }
 
     public Properties getProperties() {
-        return props;
+        return this.props;
     }
 
     /**

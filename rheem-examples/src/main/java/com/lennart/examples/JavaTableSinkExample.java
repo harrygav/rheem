@@ -2,7 +2,10 @@ package com.lennart.examples;
 
 import org.qcri.rheem.basic.data.Record;
 import org.qcri.rheem.basic.data.Tuple2;
-import org.qcri.rheem.basic.operators.*;
+import org.qcri.rheem.basic.operators.FilterOperator;
+import org.qcri.rheem.basic.operators.JoinOperator;
+import org.qcri.rheem.basic.operators.MapOperator;
+import org.qcri.rheem.basic.operators.TextFileSource;
 import org.qcri.rheem.core.api.Job;
 import org.qcri.rheem.core.api.RheemContext;
 import org.qcri.rheem.core.function.PredicateDescriptor;
@@ -12,12 +15,11 @@ import org.qcri.rheem.hive.Hive;
 import org.qcri.rheem.hive.operators.HiveTableSource;
 import org.qcri.rheem.hive.platform.HivePlatform;
 import org.qcri.rheem.java.Java;
-import org.qcri.rheem.spark.Spark;
-import org.qcri.rheem.spark.operators.SparkTableSink;
+import org.qcri.rheem.java.operators.JavaTableSink;
 
 import java.util.Properties;
 
-public class SparkTableSinkExample {
+public class JavaTableSinkExample {
     public static void main(String[] args) {
 
         // Hive table.
@@ -52,24 +54,22 @@ public class SparkTableSinkExample {
             Record r1 = (Record) t.getField1();
             return new Record(r0.getInt(0), r0.getInt(1), r0.getString(2), r1.getDouble(1));
         }, Tuple2.class, Record.class);
-        //map2.addTargetPlatform(SparkPlatform.getInstance());
         join.connectTo(0, map2, 0);
 
         // Sink connection properties.
-        Properties props = new Properties();
-        props.setProperty("url", "jdbc:hive2://localhost:10000");
-        props.setProperty("database", "default");
-        props.setProperty("user", "lbhm");
-        props.setProperty("password", "");
-        props.setProperty("driver", "org.apache.hive.jdbc.HiveDriver");
+        Properties hiveProps = new Properties();
+        hiveProps.setProperty("url", "jdbc:hive2://localhost:10000");
+        hiveProps.setProperty("database", "default");
+        hiveProps.setProperty("user", "lbhm");
+        hiveProps.setProperty("driver", "org.apache.hive.jdbc.HiveDriver");
+
+        Properties postgresProps = new Properties();
+        postgresProps.setProperty("url", "jdbc:postgresql://localhost/rheemTest");
+        postgresProps.setProperty("user", "rheemTest");
+        postgresProps.setProperty("driver", "org.postgresql.Driver");
 
         // Sink.
-        Operator sink = new SparkTableSink(props, "append", "spark_tablesink_test", "append", "userid", "age", "gender", "score");
-
-        // Non-table Operator for testing purposes.
-        // Operator sink = new TextFileSink<Record>("/home/lbhm/Desktop/test.txt", Record.class);
-        // sink.addTargetPlatform(SparkPlatform.getInstance());
-
+        Operator sink = new JavaTableSink(postgresProps, "overwrite", "java_tablesink_test");
         map2.connectTo(0, sink, 0);
 
         // Create RheemPlan
@@ -78,10 +78,9 @@ public class SparkTableSinkExample {
         // Create context and execute.
         RheemContext rheemContext = new RheemContext()
                 .withPlugin(Java.basicPlugin())
-                .withPlugin(Hive.plugin())
-                .withPlugin(Spark.basicPlugin());
+                .withPlugin(Hive.plugin());
 
-        Job job = rheemContext.createJob("SparkTableSink Example", plan);
+        Job job = rheemContext.createJob("JavaTableSink Example", plan);
         job.execute();
     }
 }

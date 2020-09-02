@@ -27,13 +27,13 @@ public class SparkTableSink extends TableSink implements SparkExecutionOperator 
 
     private SaveMode mode;
 
-    public SparkTableSink(Properties props, String tableName, String mode, String... columnNames) {
+    public SparkTableSink(Properties props, String mode, String tableName, String... columnNames) {
         super(props, tableName, columnNames);
         this.setMode(mode);
     }
 
-    public SparkTableSink(Properties props, String tableName, String mode, DataSetType<Record> type) {
-        super(props, tableName, type);
+    public SparkTableSink(Properties props, String mode, String tableName, String[] columnNames, DataSetType<Record> type) {
+        super(props, tableName, columnNames, type);
         this.setMode(mode);
     }
 
@@ -50,8 +50,6 @@ public class SparkTableSink extends TableSink implements SparkExecutionOperator 
         assert inputs.length == 1;
         assert outputs.length == 0;
         JavaRDD<Record> inputRdd = ((RddChannel.Instance) inputs[0]).provideRdd();
-
-        System.out.println("STS Evalation!");
 
         SQLContext sqlcontext=new SQLContext(sparkExecutor.sc.sc());
         Dataset<Row> dataFrame = sqlcontext.createDataFrame(inputRdd, Record.class);
