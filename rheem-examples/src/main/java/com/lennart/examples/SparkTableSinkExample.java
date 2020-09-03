@@ -56,20 +56,19 @@ public class SparkTableSinkExample {
         join.connectTo(0, map2, 0);
 
         // Sink connection properties.
-        Properties props = new Properties();
-        props.setProperty("url", "jdbc:hive2://localhost:10000");
-        props.setProperty("database", "default");
-        props.setProperty("user", "lbhm");
-        props.setProperty("password", "");
-        props.setProperty("driver", "org.apache.hive.jdbc.HiveDriver");
+        Properties hiveProps = new Properties();
+        hiveProps.setProperty("url", "jdbc:hive2://localhost:10000");
+        hiveProps.setProperty("database", "default");
+        hiveProps.setProperty("user", "lbhm");
+        hiveProps.setProperty("driver", "org.apache.hive.jdbc.HiveDriver");
+
+        Properties postgresProps = new Properties();
+        postgresProps.setProperty("url", "jdbc:postgresql://localhost/rheemTest");
+        postgresProps.setProperty("user", "rheemTest");
+        postgresProps.setProperty("driver", "org.postgresql.Driver");
 
         // Sink.
-        Operator sink = new SparkTableSink(props, "append", "spark_tablesink_test", "append", "userid", "age", "gender", "score");
-
-        // Non-table Operator for testing purposes.
-        // Operator sink = new TextFileSink<Record>("/home/lbhm/Desktop/test.txt", Record.class);
-        // sink.addTargetPlatform(SparkPlatform.getInstance());
-
+        Operator sink = new SparkTableSink(postgresProps, "append", "spark_tablesink_test",  "userid", "age", "gender", "score");
         map2.connectTo(0, sink, 0);
 
         // Create RheemPlan

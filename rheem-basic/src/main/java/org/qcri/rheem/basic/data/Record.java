@@ -97,6 +97,15 @@ public class Record implements Serializable, Copyable<Record> {
     }
 
     /**
+     * Retrieve all fields.
+     *
+     * @return all fields as a {@link Object[]}
+     */
+    public Object[] getValues() {
+        return values;
+    }
+
+    /**
      * Retrieve the size of this instance.
      *
      * @return the number of fields in this instance

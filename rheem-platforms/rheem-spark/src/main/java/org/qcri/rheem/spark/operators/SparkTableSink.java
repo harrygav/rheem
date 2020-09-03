@@ -3,8 +3,12 @@ package org.qcri.rheem.spark.operators;
 import org.apache.spark.api.java.JavaRDD;
 import org.apache.spark.sql.Dataset;
 import org.apache.spark.sql.Row;
+import org.apache.spark.sql.RowFactory;
 import org.apache.spark.sql.SQLContext;
 import org.apache.spark.sql.SaveMode;
+import org.apache.spark.sql.types.DataTypes;
+import org.apache.spark.sql.types.StructField;
+import org.apache.spark.sql.types.StructType;
 import org.qcri.rheem.basic.data.Record;
 import org.qcri.rheem.basic.operators.TableSink;
 import org.qcri.rheem.core.api.exception.RheemException;
@@ -47,27 +51,43 @@ public class SparkTableSink extends TableSink implements SparkExecutionOperator 
             ChannelInstance[] outputs,
             SparkExecutor sparkExecutor,
             OptimizationContext.OperatorContext operatorContext) {
+        System.out.println("STS Evaluate");
         assert inputs.length == 1;
         assert outputs.length == 0;
         JavaRDD<Record> inputRdd = ((RddChannel.Instance) inputs[0]).provideRdd();
 
-        SQLContext sqlcontext=new SQLContext(sparkExecutor.sc.sc());
-        Dataset<Row> dataFrame = sqlcontext.createDataFrame(inputRdd, Record.class);
-        dataFrame.write().mode(this.mode).jdbc(this.getProperties().getProperty("url"), this.getTableName(), this.getProperties());
+        Record schemaRecord = inputRdd.first();
+        int recordLength = schemaRecord.size();
 
-//        SQLContext sqlcontext=new SQLContext(context);
-//        DataFrame outDataFrame=sqlcontext.createDataFrame(finalOutPutRDD, WebHttpOutPutVO.class);
-//        Properties prop = new java.util.Properties();
-//        prop.setProperty("database", "Web_Session");
-//        prop.setProperty("user", "user");
-//        prop.setProperty("password", "pwd@123");
-//        prop.setProperty("driver", "com.microsoft.sqlserver.jdbc.SQLServerDriver");
-//        outDataFrame.write().mode(org.apache.spark.sql.SaveMode.Append).jdbc("jdbc:sqlserver://<Host>:1433", "test_table", prop);
+        JavaRDD<Row> rowRdd = inputRdd.map(record -> {
+            Object[] values = record.getValues();
+            Row r = RowFactory.create(values);
+            System.out.println("test");
+            System.out.println(r);
+            return r;
+        });
 
+        System.out.println(rowRdd.collect().toString());
 
-//        final Function<T, String> formattingFunction =
-//                sparkExecutor.getCompiler().compile(this.formattingDescriptor, this, operatorContext, inputs);
-//        inputRdd.map(formattingFunction).saveAsTextFile(this.textFileUrl);
+        StructField[] fields = new StructField[recordLength];
+
+        for (int i = 0; i < recordLength; i++) {
+            fields[i] = new StructField(this.getColumnNames()[i], DataTypes.StringType, true, null);
+        }
+        StructType schema = new StructType(fields);
+        System.out.println("Schema");
+        System.out.println(schema.toString());
+
+        SQLContext sqlcontext = new SQLContext(sparkExecutor.sc.sc());
+
+        // TODO: This does not work correctly yet.
+        Dataset<Row> dataSet = sqlcontext.createDataFrame(rowRdd, schema);
+
+        System.out.println("DF Content");
+        System.out.println(dataSet.collect());
+        System.out.println("DF Schema");
+        dataSet.printSchema();
+        dataSet.write().mode(this.mode).jdbc(this.getProperties().getProperty("url"), this.getTableName(), this.getProperties());
 
         return ExecutionOperator.modelEagerExecution(inputs, outputs, operatorContext);
     }
