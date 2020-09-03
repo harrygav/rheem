@@ -7,6 +7,7 @@ import org.apache.spark.sql.RowFactory;
 import org.apache.spark.sql.SQLContext;
 import org.apache.spark.sql.SaveMode;
 import org.apache.spark.sql.types.DataTypes;
+import org.apache.spark.sql.types.Metadata;
 import org.apache.spark.sql.types.StructField;
 import org.apache.spark.sql.types.StructType;
 import org.qcri.rheem.basic.data.Record;
@@ -51,41 +52,26 @@ public class SparkTableSink extends TableSink implements SparkExecutionOperator 
             ChannelInstance[] outputs,
             SparkExecutor sparkExecutor,
             OptimizationContext.OperatorContext operatorContext) {
-        System.out.println("STS Evaluate");
         assert inputs.length == 1;
         assert outputs.length == 0;
-        JavaRDD<Record> inputRdd = ((RddChannel.Instance) inputs[0]).provideRdd();
 
-        Record schemaRecord = inputRdd.first();
-        int recordLength = schemaRecord.size();
+        JavaRDD<Record> recordRDD = ((RddChannel.Instance) inputs[0]).provideRdd();
+        int recordLength = recordRDD.first().size();
 
-        JavaRDD<Row> rowRdd = inputRdd.map(record -> {
+        JavaRDD<Row> rowRDD = recordRDD.map(record -> {
             Object[] values = record.getValues();
-            Row r = RowFactory.create(values);
-            System.out.println("test");
-            System.out.println(r);
-            return r;
+            return RowFactory.create(values);
         });
 
-        System.out.println(rowRdd.collect().toString());
-
         StructField[] fields = new StructField[recordLength];
-
         for (int i = 0; i < recordLength; i++) {
-            fields[i] = new StructField(this.getColumnNames()[i], DataTypes.StringType, true, null);
+            // TODO: Implement a proper logic to assign the correct data types.
+            fields[i] = new StructField(this.getColumnNames()[i], DataTypes.StringType, true, Metadata.empty());
         }
         StructType schema = new StructType(fields);
-        System.out.println("Schema");
-        System.out.println(schema.toString());
 
         SQLContext sqlcontext = new SQLContext(sparkExecutor.sc.sc());
-
-        // TODO: This does not work correctly yet.
-        Dataset<Row> dataSet = sqlcontext.createDataFrame(rowRdd, schema);
-
-        System.out.println("DF Content");
-        System.out.println(dataSet.collect());
-        System.out.println("DF Schema");
+        Dataset<Row> dataSet = sqlcontext.createDataFrame(rowRDD, schema);
         dataSet.printSchema();
         dataSet.write().mode(this.mode).jdbc(this.getProperties().getProperty("url"), this.getTableName(), this.getProperties());
 
@@ -99,6 +85,10 @@ public class SparkTableSink extends TableSink implements SparkExecutionOperator 
             this.mode = SaveMode.Append;
         } else if (mode.equals("overwrite")) {
             this.mode = SaveMode.Overwrite;
+        } else if (mode.equals("errorIfExists")) {
+            this.mode = SaveMode.ErrorIfExists;
+        } else if (mode.equals("ignore")) {
+            this.mode = SaveMode.Ignore;
         } else {
             throw new RheemException(String.format("Specified write mode for SparkTableSink does not exist: %s", mode));
         }

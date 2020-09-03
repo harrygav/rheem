@@ -50,7 +50,9 @@ public class SparkTableSinkExample {
         Operator map2 = new MapOperator<Tuple2, Record>(t -> {
             Record r0 = (Record) t.getField0();
             Record r1 = (Record) t.getField1();
-            return new Record(r0.getInt(0), r0.getInt(1), r0.getString(2), r1.getDouble(1));
+            // We temporarily hard code everything as Strings until we have a proper solution for data types.
+            return new Record(r0.getString(0), r0.getString(1), r0.getString(2), r1.getString(1));
+            //return new Record(r0.getInt(0), r0.getInt(1), r0.getString(2), r1.getDouble(1));
         }, Tuple2.class, Record.class);
         //map2.addTargetPlatform(SparkPlatform.getInstance());
         join.connectTo(0, map2, 0);
