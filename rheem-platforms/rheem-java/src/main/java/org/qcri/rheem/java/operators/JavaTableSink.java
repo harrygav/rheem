@@ -27,20 +27,19 @@ import java.util.Properties;
 
 public class JavaTableSink extends TableSink implements JavaExecutionOperator {
 
-    private String mode;
 
     public JavaTableSink(Properties props, String mode, String tableName) {
         this(props, mode, tableName, null);
     }
 
     public JavaTableSink(Properties props, String mode, String tableName, String... columnNames) {
-        super(props, tableName, columnNames);
-        this.mode = mode;
+        super(props, mode, tableName, columnNames);
+
     }
 
     public JavaTableSink(Properties props, String mode, String tableName, String[] columnNames, DataSetType<Record> type) {
-        super(props, tableName, columnNames, type);
-        this.mode = mode;
+        super(props, mode, tableName, columnNames, type);
+
     }
 
     public JavaTableSink(TableSink that) {
@@ -82,11 +81,11 @@ public class JavaTableSink extends TableSink implements JavaExecutionOperator {
             Class.forName(this.getProperties().getProperty("driver"));
             conn = DriverManager.getConnection(this.getProperties().getProperty("url"), this.getProperties());
             conn.setAutoCommit(false);
-            
+
             Statement stmt = conn.createStatement();
 
             // Drop existing table if the mode is 'overwrite'.
-            if (this.mode.equals("overwrite")) {
+            if (this.getMode().equals("overwrite")) {
                 stmt.execute("DROP TABLE IF EXISTS " + this.getTableName());
             }
 

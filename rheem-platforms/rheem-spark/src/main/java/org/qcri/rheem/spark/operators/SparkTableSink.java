@@ -33,17 +33,18 @@ public class SparkTableSink extends TableSink implements SparkExecutionOperator 
     private SaveMode mode;
 
     public SparkTableSink(Properties props, String mode, String tableName, String... columnNames) {
-        super(props, tableName, columnNames);
+        super(props, mode, tableName, columnNames);
         this.setMode(mode);
     }
 
     public SparkTableSink(Properties props, String mode, String tableName, String[] columnNames, DataSetType<Record> type) {
-        super(props, tableName, columnNames, type);
+        super(props, mode, tableName, columnNames, type);
         this.setMode(mode);
     }
 
     public SparkTableSink(TableSink that) {
         super(that);
+        this.setMode(that.getMode());
     }
 
     @Override

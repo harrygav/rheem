@@ -26,7 +26,7 @@ public class TableSinkMapping implements Mapping {
     private SubplanPattern createSubplanPattern() {
         final OperatorPattern operatorPattern = new OperatorPattern<>(
                 "sink",
-                new TableSink(new Properties(), ""),
+                new TableSink(new Properties(),"", ""),
                 false
         );
         return SubplanPattern.createSingleton(operatorPattern);

@@ -18,22 +18,25 @@ public class TableSink extends UnarySink<Record> {
 
     private Properties props;
 
+    private String mode;
+
     /**
      * Creates a new instance.
      *
-     * @param props        database connection properties
-     * @param tableName    name of the table to be written
-     * @param columnNames  names of the columns in the tables
+     * @param props       database connection properties
+     * @param tableName   name of the table to be written
+     * @param columnNames names of the columns in the tables
      */
-    public TableSink(Properties props, String tableName, String... columnNames) {
-        this(props, tableName, columnNames, DataSetType.createDefault(Record.class));
+    public TableSink(Properties props, String mode, String tableName, String... columnNames) {
+        this(props, mode, tableName, columnNames, DataSetType.createDefault(Record.class));
     }
 
-    public TableSink(Properties props, String tableName, String[] columnNames, DataSetType<Record> type) {
+    public TableSink(Properties props, String mode, String tableName, String[] columnNames, DataSetType<Record> type) {
         super(type);
         this.tableName = tableName;
         this.columnNames = columnNames;
         this.props = props;
+        this.mode = mode;
     }
 
     /**
@@ -44,7 +47,9 @@ public class TableSink extends UnarySink<Record> {
     public TableSink(TableSink that) {
         super(that);
         this.tableName = that.getTableName();
+        this.columnNames = that.getColumnNames();
         this.props = that.getProperties();
+        this.mode = that.getMode();
     }
 
     public String getTableName() {
@@ -61,6 +66,14 @@ public class TableSink extends UnarySink<Record> {
 
     public Properties getProperties() {
         return this.props;
+    }
+
+    public String getMode() {
+        return mode;
+    }
+
+    public void setMode(String mode) {
+        this.mode = mode;
     }
 
     /**
