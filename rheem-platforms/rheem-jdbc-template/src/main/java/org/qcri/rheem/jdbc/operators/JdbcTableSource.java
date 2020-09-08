@@ -13,7 +13,7 @@ import java.sql.ResultSet;
 import java.sql.SQLException;
 
 /**
- * PostgreSQL implementation for the {@link TableSource}.
+ * SQL implementation for the {@link TableSource}.
  */
 public abstract class JdbcTableSource extends TableSource implements JdbcExecutionOperator {
 

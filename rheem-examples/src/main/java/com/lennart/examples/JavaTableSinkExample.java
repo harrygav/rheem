@@ -2,22 +2,25 @@ package com.lennart.examples;
 
 import org.qcri.rheem.basic.data.Record;
 import org.qcri.rheem.basic.data.Tuple2;
-import org.qcri.rheem.basic.operators.*;
+import org.qcri.rheem.basic.operators.FilterOperator;
+import org.qcri.rheem.basic.operators.JoinOperator;
+import org.qcri.rheem.basic.operators.MapOperator;
+import org.qcri.rheem.basic.operators.TextFileSource;
 import org.qcri.rheem.core.api.Job;
 import org.qcri.rheem.core.api.RheemContext;
 import org.qcri.rheem.core.function.PredicateDescriptor;
 import org.qcri.rheem.core.plan.rheemplan.Operator;
 import org.qcri.rheem.core.plan.rheemplan.RheemPlan;
-import org.qcri.rheem.core.platform.Platform;
 import org.qcri.rheem.hive.Hive;
 import org.qcri.rheem.hive.operators.HiveTableSource;
 import org.qcri.rheem.hive.platform.HivePlatform;
 import org.qcri.rheem.java.Java;
+import org.qcri.rheem.java.operators.JavaTableSink;
 
-public class JavaSimpleHiveJoin {
+import java.util.Properties;
+
+public class JavaTableSinkExample {
     public static void main(String[] args) {
-
-        Platform hivePlatform = HivePlatform.getInstance();
 
         // Hive table.
         Operator u_users = new HiveTableSource("u_user");
@@ -26,7 +29,7 @@ public class JavaSimpleHiveJoin {
 
         PredicateDescriptor pred = new PredicateDescriptor(t -> true, Record.class).withSqlImplementation("u_user.age > 25");
         Operator selection = new FilterOperator<Record>(pred);
-        selection.addTargetPlatform(hivePlatform);
+        selection.addTargetPlatform(HivePlatform.getInstance());
         projection.connectTo(0, selection, 0);
 
         // CSV file.
@@ -53,9 +56,20 @@ public class JavaSimpleHiveJoin {
         }, Tuple2.class, Record.class);
         join.connectTo(0, map2, 0);
 
+        // Sink connection properties.
+        Properties hiveProps = new Properties();
+        hiveProps.setProperty("url", "jdbc:hive2://localhost:10000");
+        hiveProps.setProperty("database", "default");
+        hiveProps.setProperty("user", "lbhm");
+        hiveProps.setProperty("driver", "org.apache.hive.jdbc.HiveDriver");
+
+        Properties postgresProps = new Properties();
+        postgresProps.setProperty("url", "jdbc:postgresql://localhost/rheemTest");
+        postgresProps.setProperty("user", "rheemTest");
+        postgresProps.setProperty("driver", "org.postgresql.Driver");
+
         // Sink.
-        Operator sink = LocalCallbackSink.createStdoutSink(Record.class);
-//        Operator sink = new TextFileSink<>("file:///home/lbhm/hive/jointest.csv", Record.class);
+        Operator sink = new JavaTableSink(postgresProps, "overwrite", "java_tablesink_test");
         map2.connectTo(0, sink, 0);
 
         // Create RheemPlan
@@ -66,7 +80,7 @@ public class JavaSimpleHiveJoin {
                 .withPlugin(Java.basicPlugin())
                 .withPlugin(Hive.plugin());
 
-        Job job = rheemContext.createJob("Java API Join Example", plan);
+        Job job = rheemContext.createJob("JavaTableSink Example", plan);
         job.execute();
     }
 }
