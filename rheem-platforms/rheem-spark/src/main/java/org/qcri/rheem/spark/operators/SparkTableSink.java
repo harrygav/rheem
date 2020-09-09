@@ -73,7 +73,6 @@ public class SparkTableSink extends TableSink implements SparkExecutionOperator 
 
         SQLContext sqlcontext = new SQLContext(sparkExecutor.sc.sc());
         Dataset<Row> dataSet = sqlcontext.createDataFrame(rowRDD, schema);
-        dataSet.printSchema();
         dataSet.write().mode(this.mode).jdbc(this.getProperties().getProperty("url"), this.getTableName(), this.getProperties());
 
         return ExecutionOperator.modelEagerExecution(inputs, outputs, operatorContext);
