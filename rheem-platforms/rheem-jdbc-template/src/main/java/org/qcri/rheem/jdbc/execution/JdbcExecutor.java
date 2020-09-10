@@ -223,7 +223,7 @@ public class JdbcExecutor extends ExecutorTemplate {
         }
 
         // Print SQL output for testing
-        System.out.println("SQL Query:\n" + sb.toString());
+        //System.out.println("SQL Query:\n" + sb.toString());
 
         // The semicolon needs to be omitted on some platforms
         if (!(getPlatform().getName().toLowerCase().equals("phoenix") || getPlatform().getName().toLowerCase().equals("hive")))
