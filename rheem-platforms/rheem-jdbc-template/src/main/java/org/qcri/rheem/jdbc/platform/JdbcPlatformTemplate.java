@@ -103,6 +103,7 @@ public abstract class JdbcPlatformTemplate extends Platform {
         return this.sqlQueryChannelDescriptor;
     }
 
+
     /**
      * Creates a new {@link DatabaseDescriptor} for this instance and the given {@link Configuration}.
      *
