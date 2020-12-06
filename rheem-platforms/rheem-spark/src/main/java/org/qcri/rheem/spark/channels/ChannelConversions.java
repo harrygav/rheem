@@ -6,15 +6,9 @@ import org.qcri.rheem.core.optimizer.channels.ChannelConversion;
 import org.qcri.rheem.core.optimizer.channels.DefaultChannelConversion;
 import org.qcri.rheem.core.types.DataSetType;
 import org.qcri.rheem.java.channels.CollectionChannel;
+import org.qcri.rheem.java.channels.SqlStatementChannel;
 import org.qcri.rheem.java.platform.JavaPlatform;
-import org.qcri.rheem.spark.operators.SparkBroadcastOperator;
-import org.qcri.rheem.spark.operators.SparkCacheOperator;
-import org.qcri.rheem.spark.operators.SparkCollectOperator;
-import org.qcri.rheem.spark.operators.SparkCollectionSource;
-import org.qcri.rheem.spark.operators.SparkObjectFileSink;
-import org.qcri.rheem.spark.operators.SparkObjectFileSource;
-import org.qcri.rheem.spark.operators.SparkTsvFileSink;
-import org.qcri.rheem.spark.operators.SparkTsvFileSource;
+import org.qcri.rheem.spark.operators.*;
 
 import java.util.Arrays;
 import java.util.Collection;
@@ -24,6 +18,11 @@ import java.util.Collection;
  */
 public class ChannelConversions {
 
+    public static final ChannelConversion SQL_STATEMENT_TO_UNCACHED_RDD = new DefaultChannelConversion(
+            SqlStatementChannel.DESCRIPTOR,
+            RddChannel.UNCACHED_DESCRIPTOR,
+            () -> new SparkSqlStatementSource()
+    );
     public static final ChannelConversion UNCACHED_RDD_TO_CACHED_RDD = new DefaultChannelConversion(
             RddChannel.UNCACHED_DESCRIPTOR,
             RddChannel.CACHED_DESCRIPTOR,
@@ -91,6 +90,7 @@ public class ChannelConversions {
     );
 
     public static Collection<ChannelConversion> ALL = Arrays.asList(
+            SQL_STATEMENT_TO_UNCACHED_RDD,
             UNCACHED_RDD_TO_CACHED_RDD,
             COLLECTION_TO_BROADCAST,
             COLLECTION_TO_UNCACHED_RDD,

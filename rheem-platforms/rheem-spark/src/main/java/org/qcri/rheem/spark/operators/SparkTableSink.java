@@ -57,24 +57,28 @@ public class SparkTableSink extends TableSink implements SparkExecutionOperator 
         assert outputs.length == 0;
 
         JavaRDD<Record> recordRDD = ((RddChannel.Instance) inputs[0]).provideRdd();
-        int recordLength = recordRDD.first().size();
 
-        JavaRDD<Row> rowRDD = recordRDD.map(record -> {
-            Object[] values = record.getValues();
-            return RowFactory.create(values);
-        });
+        //nothing to write if rdd empty
+        if (!recordRDD.isEmpty()) {
+            int recordLength = recordRDD.first().size();
 
-        StructField[] fields = new StructField[recordLength];
-        for (int i = 0; i < recordLength; i++) {
-            // TODO: Implement a proper logic to assign the correct data types.
-            fields[i] = new StructField(this.getColumnNames()[i], DataTypes.StringType, true, Metadata.empty());
+            JavaRDD<Row> rowRDD = recordRDD.map(record -> {
+                Object[] values = record.getValues();
+                return RowFactory.create(values);
+            });
+
+            StructField[] fields = new StructField[recordLength];
+            for (int i = 0; i < recordLength; i++) {
+                // TODO: Implement a proper logic to assign the correct data types.
+                fields[i] = new StructField(this.getColumnNames()[i], DataTypes.StringType, true, Metadata.empty());
+            }
+            StructType schema = new StructType(fields);
+
+            SQLContext sqlcontext = new SQLContext(sparkExecutor.sc.sc());
+            Dataset<Row> dataSet = sqlcontext.createDataFrame(rowRDD, schema);
+            this.getProperties().setProperty("batchSize", "250000");
+            dataSet.write().mode(this.mode).jdbc(this.getProperties().getProperty("url"), this.getTableName(), this.getProperties());
         }
-        StructType schema = new StructType(fields);
-
-        SQLContext sqlcontext = new SQLContext(sparkExecutor.sc.sc());
-        Dataset<Row> dataSet = sqlcontext.createDataFrame(rowRDD, schema);
-        dataSet.write().mode(this.mode).jdbc(this.getProperties().getProperty("url"), this.getTableName(), this.getProperties());
-
         return ExecutionOperator.modelEagerExecution(inputs, outputs, operatorContext);
     }
 
