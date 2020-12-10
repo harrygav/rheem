@@ -12,8 +12,8 @@ import org.qcri.rheem.core.platform.ChannelDescriptor;
 import org.qcri.rheem.core.platform.ChannelInstance;
 import org.qcri.rheem.core.platform.lineage.ExecutionLineageNode;
 import org.qcri.rheem.core.util.Tuple;
+import org.qcri.rheem.jdbc.channels.SqlQueryChannel;
 import org.qcri.rheem.spark.channels.RddChannel;
-import org.qcri.rheem.spark.channels.SqlStatementChannel;
 import org.qcri.rheem.spark.execution.SparkExecutor;
 import org.qcri.rheem.spark.platform.SparkPlatform;
 
@@ -36,6 +36,10 @@ public class SparkSqlStatementSource extends SqlStatementSource implements Spark
 
     public SparkSqlStatementSource(SqlStatementSource that) {
         super(that);
+    }
+
+    public SparkSqlStatementSource() {
+        super(null);
     }
 
     @Override
@@ -75,7 +79,7 @@ public class SparkSqlStatementSource extends SqlStatementSource implements Spark
 
     @Override
     public List<ChannelDescriptor> getSupportedInputChannels(int index) {
-        return Collections.singletonList(SqlStatementChannel.DESCRIPTOR);
+        return Collections.singletonList(SqlQueryChannel.DESCRIPTOR);
     }
 
     @Override

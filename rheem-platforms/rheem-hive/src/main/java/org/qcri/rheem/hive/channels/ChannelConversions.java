@@ -20,11 +20,11 @@ public class ChannelConversions {
             () -> new SqlToStreamOperator(HivePlatform.getInstance())
     );
 
-    public static final ChannelConversion SQL_TO_SQL_CONVERSION = new DefaultChannelConversion(
+    /*public static final ChannelConversion SQL_TO_SQL_CONVERSION = new DefaultChannelConversion(
             HivePlatform.getInstance().getSqlStatementChannelDescriptor(),
             SqlStatementChannel.DESCRIPTOR,
             () -> new SqlToSqlOperator(HivePlatform.getInstance())
-    );
+    );*/
 
     public static final Collection<ChannelConversion> ALL = Collections.singleton(
             SQL_TO_STREAM_CONVERSION

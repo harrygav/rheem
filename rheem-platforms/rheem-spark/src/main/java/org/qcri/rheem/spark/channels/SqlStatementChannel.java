@@ -6,13 +6,10 @@ import org.qcri.rheem.core.plan.rheemplan.OutputSlot;
 import org.qcri.rheem.core.platform.AbstractChannelInstance;
 import org.qcri.rheem.core.platform.ChannelDescriptor;
 import org.qcri.rheem.core.platform.Executor;
-import org.qcri.rheem.java.channels.JavaChannelInstance;
-import org.qcri.rheem.java.operators.JavaExecutionOperator;
 
-import java.util.Collection;
 
 /**
- * {@link Channel} between two {@link JavaExecutionOperator}s using an intermediate {@link Collection}.
+ *
  */
 public class SqlStatementChannel extends Channel {
 
@@ -40,7 +37,7 @@ public class SqlStatementChannel extends Channel {
     }
 
     /**
-     * {@link JavaChannelInstance} implementation for the {@link SqlStatementChannel}.
+     *
      */
     public class Instance extends AbstractChannelInstance {
 
