@@ -12,20 +12,15 @@ import org.qcri.rheem.core.platform.ChannelInstance;
 import org.qcri.rheem.core.platform.lineage.ExecutionLineageNode;
 import org.qcri.rheem.core.types.DataSetType;
 import org.qcri.rheem.core.util.JsonSerializable;
-import org.qcri.rheem.core.util.ReflectionUtils;
 import org.qcri.rheem.core.util.Tuple;
-
+import org.qcri.rheem.java.channels.SqlStatementChannel;
 import org.qcri.rheem.java.execution.JavaExecutor;
 import org.qcri.rheem.java.operators.JavaExecutionOperator;
 import org.qcri.rheem.jdbc.channels.SqlQueryChannel;
 import org.qcri.rheem.jdbc.platform.JdbcPlatformTemplate;
-import org.qcri.rheem.spark.channels.SqlStatementChannel;
 
 import java.sql.Connection;
-import java.util.Arrays;
-import java.util.Collection;
-import java.util.Collections;
-import java.util.List;
+import java.util.*;
 
 /**
  * This {@link Operator} converts {@link SqlQueryChannel}s to {@link SqlStatementChannel}s.
@@ -69,15 +64,18 @@ public class SqlToSqlOperator extends UnaryToUnaryOperator<Record, Record> imple
         final SqlQueryChannel.Instance input = (SqlQueryChannel.Instance) inputs[0];
         final SqlStatementChannel.Instance output = (SqlStatementChannel.Instance) outputs[0];
 
-        JdbcPlatformTemplate producerPlatform = (JdbcPlatformTemplate) input.getChannel().getProducer().getPlatform();
-        final Connection connection = producerPlatform
-                .createDatabaseDescriptor(executor.getConfiguration())
-                .createJdbcConnection();
+        System.out.println(input.getChannel().getProducer().getPlatform());
 
-        output.accept(input.getSqlQuery());
+        JdbcPlatformTemplate producerPlatform = (JdbcPlatformTemplate) input.getChannel().getProducer().getPlatform();
+        Properties props = producerPlatform
+                .createDatabaseDescriptor(executor.getConfiguration())
+                .getProperties();
+
+
+        output.accept(input.getSqlQuery(), props);
 
         ExecutionLineageNode queryLineageNode = new ExecutionLineageNode(operatorContext);
-        queryLineageNode.add(LoadProfileEstimators.createFromSpecification(
+        /*queryLineageNode.add(LoadProfileEstimators.createFromSpecification(
                 String.format("rheem.%s.sqltosql.load.query", this.jdbcPlatform.getPlatformId()),
                 executor.getConfiguration()
         ));
@@ -87,7 +85,7 @@ public class SqlToSqlOperator extends UnaryToUnaryOperator<Record, Record> imple
                 String.format("rheem.%s.sqltosql.load.output", this.jdbcPlatform.getPlatformId()),
                 executor.getConfiguration()
         ));
-        output.getLineage().addPredecessor(outputLineageNode);
+        output.getLineage().addPredecessor(outputLineageNode);*/
 
         return queryLineageNode.collectAndMark();
     }
@@ -110,16 +108,10 @@ public class SqlToSqlOperator extends UnaryToUnaryOperator<Record, Record> imple
         );
     }
 
-
     @Override
     public JSONObject toJson() {
         return new JSONObject().put("platform", this.jdbcPlatform.getClass().getCanonicalName());
     }
 
-    @SuppressWarnings("unused")
-    public static SqlToSqlOperator fromJson(JSONObject jsonObject) {
-        final String platformClassName = jsonObject.getString("platform");
-        JdbcPlatformTemplate jdbcPlatform = ReflectionUtils.evaluate(platformClassName + ".getInstance()");
-        return new SqlToSqlOperator(jdbcPlatform);
-    }
+
 }

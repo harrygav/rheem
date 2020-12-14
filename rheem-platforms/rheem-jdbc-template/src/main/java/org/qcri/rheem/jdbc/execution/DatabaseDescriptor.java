@@ -4,6 +4,7 @@ import org.qcri.rheem.core.api.exception.RheemException;
 
 import java.sql.Connection;
 import java.sql.DriverManager;
+import java.util.Properties;
 
 /**
  * This class describes a database.
@@ -26,6 +27,16 @@ public class DatabaseDescriptor {
         this.user = user;
         this.password = password;
         this.jdbcDriverClassName = jdbcDriverClassName;
+    }
+
+    public Properties getProperties() {
+        Properties props = new Properties();
+        props.setProperty("url", this.jdbcUrl);
+        //props.setProperty("database", "");
+        props.setProperty("user", this.user);
+        props.setProperty("password", this.password);
+        props.setProperty("driver", this.jdbcDriverClassName);
+        return props;
     }
 
     /**

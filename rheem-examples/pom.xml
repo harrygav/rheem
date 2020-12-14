@@ -159,11 +159,11 @@
             <artifactId>commons-compress</artifactId>
             <version>1.7</version>
         </dependency>
-        <dependency>
+        <!--<dependency>
             <groupId>org.qcri.rheem</groupId>
             <artifactId>rheem-api_2.11</artifactId>
             <version>0.3.0</version>
-        </dependency>
+        </dependency>-->
 
     </dependencies>
 

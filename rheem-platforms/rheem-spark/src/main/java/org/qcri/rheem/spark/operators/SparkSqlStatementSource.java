@@ -12,7 +12,8 @@ import org.qcri.rheem.core.platform.ChannelDescriptor;
 import org.qcri.rheem.core.platform.ChannelInstance;
 import org.qcri.rheem.core.platform.lineage.ExecutionLineageNode;
 import org.qcri.rheem.core.util.Tuple;
-import org.qcri.rheem.jdbc.channels.SqlQueryChannel;
+import org.qcri.rheem.java.channels.CollectionChannel;
+import org.qcri.rheem.java.channels.SqlStatementChannel;
 import org.qcri.rheem.spark.channels.RddChannel;
 import org.qcri.rheem.spark.execution.SparkExecutor;
 import org.qcri.rheem.spark.platform.SparkPlatform;
@@ -30,6 +31,10 @@ import java.util.Properties;
 public class SparkSqlStatementSource extends SqlStatementSource implements SparkExecutionOperator {
 
 
+    public SparkSqlStatementSource() {
+        this(null, null);
+    }
+
     public SparkSqlStatementSource(String sqlStamenent, Properties props) {
         super(sqlStamenent, props);
     }
@@ -38,9 +43,6 @@ public class SparkSqlStatementSource extends SqlStatementSource implements Spark
         super(that);
     }
 
-    public SparkSqlStatementSource() {
-        super(null);
-    }
 
     @Override
     public Tuple<Collection<ExecutionLineageNode>, Collection<ChannelInstance>> evaluate(
@@ -52,12 +54,25 @@ public class SparkSqlStatementSource extends SqlStatementSource implements Spark
         RddChannel.Instance output = (RddChannel.Instance) outputs[0];
         SQLContext sqlContext = new SQLContext(sparkExecutor.sc);
 
+/*        Properties props = new Properties();
+        props.setProperty("url", "jdbc:postgresql://localhost/db1");
+        props.setProperty("database", "db1");
+        props.setProperty("user", "postgres");
+        props.setProperty("password", "123456");
+        props.setProperty("driver", "org.postgresql.Driver");*/
+
+
+        final SqlStatementChannel.Instance input = (SqlStatementChannel.Instance) inputs[0];
+        Properties props = input.getProps();
+
+        System.out.println(input.getSqlStatement().replaceAll(";$", ""));
         Dataset<Row> jdbcDS = sqlContext.read()
                 .format("jdbc")
-                .option("url", this.getProperties().getProperty("url"))
-                .option("dbtable", "(" + this.getSqlStatement() + ") q_alias")
-                .option("user", this.getProperties().getProperty("user"))
-                .option("password", this.getProperties().getProperty("password"))
+                .option("url", props.getProperty("url"))
+                .option("dbtable", "(" + input.getSqlStatement().replaceAll(";$", "") + ") q_alias")
+                .option("user", props.getProperty("user"))
+                .option("password", props.getProperty("password"))
+                .option("driver", props.getProperty("driver"))
                 .load();
 
 
@@ -79,7 +94,7 @@ public class SparkSqlStatementSource extends SqlStatementSource implements Spark
 
     @Override
     public List<ChannelDescriptor> getSupportedInputChannels(int index) {
-        return Collections.singletonList(SqlQueryChannel.DESCRIPTOR);
+        return Collections.singletonList(SqlStatementChannel.DESCRIPTOR);
     }
 
     @Override

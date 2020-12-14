@@ -33,7 +33,7 @@ public class PostgresSparkExample {
 
         project.connectTo(0, select, 0);
 
-        Operator sink = new TextFileSink("file:///tmp/rheemtest.csv", Tuple2.class);
+        Operator sink = new TextFileSink("file:///tmp/rheemtest.csv", Record.class);
 
         select.connectTo(0, sink, 0);
 

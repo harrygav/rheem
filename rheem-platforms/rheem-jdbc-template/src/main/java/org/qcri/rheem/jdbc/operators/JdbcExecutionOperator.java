@@ -3,10 +3,12 @@ package org.qcri.rheem.jdbc.operators;
 import org.qcri.rheem.basic.operators.TableSource;
 import org.qcri.rheem.core.plan.rheemplan.ExecutionOperator;
 import org.qcri.rheem.core.platform.ChannelDescriptor;
+import org.qcri.rheem.java.channels.SqlStatementChannel;
 import org.qcri.rheem.jdbc.compiler.FunctionCompiler;
 import org.qcri.rheem.jdbc.platform.JdbcPlatformTemplate;
 
 import java.sql.Connection;
+import java.util.Arrays;
 import java.util.Collections;
 import java.util.List;
 
@@ -33,7 +35,7 @@ public interface JdbcExecutionOperator extends ExecutionOperator {
 
     @Override
     default List<ChannelDescriptor> getSupportedOutputChannels(int index) {
-        return Collections.singletonList(this.getPlatform().getSqlQueryChannelDescriptor());
+        return Arrays.asList(this.getPlatform().getSqlQueryChannelDescriptor(), SqlStatementChannel.DESCRIPTOR);
     }
 
 }

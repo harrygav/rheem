@@ -6,8 +6,8 @@ import org.qcri.rheem.core.optimizer.channels.ChannelConversion;
 import org.qcri.rheem.core.optimizer.channels.DefaultChannelConversion;
 import org.qcri.rheem.core.types.DataSetType;
 import org.qcri.rheem.java.channels.CollectionChannel;
+import org.qcri.rheem.java.channels.SqlStatementChannel;
 import org.qcri.rheem.java.platform.JavaPlatform;
-import org.qcri.rheem.jdbc.channels.SqlQueryChannel;
 import org.qcri.rheem.spark.operators.*;
 
 import java.util.Arrays;
@@ -19,7 +19,7 @@ import java.util.Collection;
 public class ChannelConversions {
 
     public static final ChannelConversion SQL_STATEMENT_TO_UNCACHED_RDD = new DefaultChannelConversion(
-            SqlQueryChannel.DESCRIPTOR,
+            SqlStatementChannel.DESCRIPTOR,
             RddChannel.UNCACHED_DESCRIPTOR,
             () -> new SparkSqlStatementSource()
     );
