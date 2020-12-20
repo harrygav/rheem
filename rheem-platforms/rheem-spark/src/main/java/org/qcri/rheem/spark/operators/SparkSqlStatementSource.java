@@ -4,6 +4,9 @@ import org.apache.spark.api.java.JavaRDD;
 import org.apache.spark.sql.Dataset;
 import org.apache.spark.sql.Row;
 import org.apache.spark.sql.SQLContext;
+import org.apache.spark.sql.jdbc.JdbcDialect;
+import org.apache.spark.sql.jdbc.JdbcDialects;
+import org.qcri.rheem.basic.data.Record;
 import org.qcri.rheem.basic.operators.SqlStatementSource;
 import org.qcri.rheem.core.optimizer.OptimizationContext;
 import org.qcri.rheem.core.plan.rheemplan.ExecutionOperator;
@@ -54,18 +57,11 @@ public class SparkSqlStatementSource extends SqlStatementSource implements Spark
         RddChannel.Instance output = (RddChannel.Instance) outputs[0];
         SQLContext sqlContext = new SQLContext(sparkExecutor.sc);
 
-/*        Properties props = new Properties();
-        props.setProperty("url", "jdbc:postgresql://localhost/db1");
-        props.setProperty("database", "db1");
-        props.setProperty("user", "postgres");
-        props.setProperty("password", "123456");
-        props.setProperty("driver", "org.postgresql.Driver");*/
-
-
         final SqlStatementChannel.Instance input = (SqlStatementChannel.Instance) inputs[0];
         Properties props = input.getProps();
 
-        System.out.println(input.getSqlStatement().replaceAll(";$", ""));
+        JdbcDialects.registerDialect(new HiveDialect());
+
         Dataset<Row> jdbcDS = sqlContext.read()
                 .format("jdbc")
                 .option("url", props.getProperty("url"))
@@ -76,7 +72,18 @@ public class SparkSqlStatementSource extends SqlStatementSource implements Spark
                 .load();
 
 
-        final JavaRDD rdd = jdbcDS.rdd().toJavaRDD();
+        final JavaRDD<Row> rdd1 = jdbcDS.rdd().toJavaRDD();
+
+        final JavaRDD<Record> rdd = rdd1.map(r -> {
+
+            String[] vals = new String[r.length()];
+            for (int i = 0; i < r.length(); i++) {
+
+                vals[i] = r.getString(i);
+
+            }
+            return new Record(vals);
+        });
         this.name(rdd);
 
 
@@ -105,6 +112,28 @@ public class SparkSqlStatementSource extends SqlStatementSource implements Spark
     @Override
     public boolean containsAction() {
         return false;
+    }
+
+    public class HiveDialect extends JdbcDialect {
+
+
+        @Override
+
+        public boolean canHandle(String url) {
+
+            return url.startsWith("jdbc:hive2");
+
+        }
+
+        @Override
+
+        public String quoteIdentifier(String colName) {
+
+            return "" + colName + "";
+
+        }
+
+
     }
 
 }

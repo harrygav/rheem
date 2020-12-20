@@ -113,8 +113,8 @@ public abstract class JdbcPlatformTemplate extends Platform {
     public DatabaseDescriptor createDatabaseDescriptor(Configuration configuration) {
         return new DatabaseDescriptor(
                 configuration.getStringProperty(this.jdbcUrlProperty),
-                configuration.getStringProperty(this.jdbcUserProperty, null),
-                configuration.getStringProperty(this.jdbcPasswordProperty, null),
+                configuration.getStringProperty(this.jdbcUserProperty, ""),
+                configuration.getStringProperty(this.jdbcPasswordProperty, ""),
                 this.getJdbcDriverClassName()
         );
     }

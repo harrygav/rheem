@@ -29,9 +29,8 @@ public class ChannelConversions {
     );
 
     public static final Collection<ChannelConversion> ALL = Arrays.asList(
+            SQL_TO_STREAM_CONVERSION,
             SQL_TO_SQL_CONVERSION
-            //SQL_TO_STREAM_CONVERSION
-
     );
 
 }

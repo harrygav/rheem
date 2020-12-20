@@ -64,8 +64,6 @@ public class SqlToSqlOperator extends UnaryToUnaryOperator<Record, Record> imple
         final SqlQueryChannel.Instance input = (SqlQueryChannel.Instance) inputs[0];
         final SqlStatementChannel.Instance output = (SqlStatementChannel.Instance) outputs[0];
 
-        System.out.println(input.getChannel().getProducer().getPlatform());
-
         JdbcPlatformTemplate producerPlatform = (JdbcPlatformTemplate) input.getChannel().getProducer().getPlatform();
         Properties props = producerPlatform
                 .createDatabaseDescriptor(executor.getConfiguration())
