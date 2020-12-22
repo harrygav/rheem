@@ -59,7 +59,11 @@ public class SparkTableSink extends TableSink implements SparkExecutionOperator 
         JavaRDD<Record> recordRDD = ((RddChannel.Instance) inputs[0]).provideRdd();
 
         //nothing to write if rdd empty
-        if (!recordRDD.isEmpty()) {
+        recordRDD.cache();
+
+        boolean isEmpty = recordRDD.isEmpty();
+
+        if (!isEmpty) {
             int recordLength = recordRDD.first().size();
 
             JavaRDD<Row> rowRDD = recordRDD.map(record -> {
@@ -78,6 +82,10 @@ public class SparkTableSink extends TableSink implements SparkExecutionOperator 
             Dataset<Row> dataSet = sqlcontext.createDataFrame(rowRDD, schema);
             this.getProperties().setProperty("batchSize", "250000");
             dataSet.write().mode(this.mode).jdbc(this.getProperties().getProperty("url"), this.getTableName(), this.getProperties());
+        }
+        else
+        {
+            System.out.println("RDD is empty, nothing to write!");
         }
         return ExecutionOperator.modelEagerExecution(inputs, outputs, operatorContext);
     }
