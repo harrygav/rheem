@@ -21,7 +21,7 @@ public class HiveSparkExample {
     public static void main(String[] args) {
 
 
-        Operator source = new HiveTableSource("lineitem_sf1");
+        Operator source = new HiveTableSource("lineitem");
 
         Operator project = MapOperator.createProjection(Record.class, Record.class, "rowkey", "l_partkey");
 
