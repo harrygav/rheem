@@ -59,7 +59,7 @@ public class SparkTableSink extends TableSink implements SparkExecutionOperator 
         JavaRDD<Record> recordRDD = ((RddChannel.Instance) inputs[0]).provideRdd();
 
         //nothing to write if rdd empty
-        recordRDD.cache();
+        //recordRDD.cache();
 
         //boolean isEmpty = recordRDD.isEmpty();
         boolean isEmpty = false;
