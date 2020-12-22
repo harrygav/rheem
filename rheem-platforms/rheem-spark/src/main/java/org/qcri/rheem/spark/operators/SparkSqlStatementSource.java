@@ -60,6 +60,8 @@ public class SparkSqlStatementSource extends SqlStatementSource implements Spark
         final SqlStatementChannel.Instance input = (SqlStatementChannel.Instance) inputs[0];
         Properties props = input.getProps();
 
+        System.out.println(input.getSqlStatement());
+
         JdbcDialects.registerDialect(new HiveDialect());
 
         Dataset<Row> jdbcDS = sqlContext.read()
