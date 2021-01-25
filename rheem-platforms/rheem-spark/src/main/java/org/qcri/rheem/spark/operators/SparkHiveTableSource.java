@@ -4,6 +4,7 @@ import org.apache.spark.api.java.JavaRDD;
 import org.apache.spark.sql.Dataset;
 import org.apache.spark.sql.Row;
 import org.apache.spark.sql.SQLContext;
+import org.apache.spark.sql.SparkSession;
 import org.apache.spark.sql.jdbc.JdbcDialect;
 import org.apache.spark.sql.jdbc.JdbcDialects;
 import org.qcri.rheem.basic.data.Record;
@@ -15,12 +16,12 @@ import org.qcri.rheem.core.platform.ChannelDescriptor;
 import org.qcri.rheem.core.platform.ChannelInstance;
 import org.qcri.rheem.core.platform.lineage.ExecutionLineageNode;
 import org.qcri.rheem.core.util.Tuple;
-import org.qcri.rheem.java.channels.CollectionChannel;
 import org.qcri.rheem.java.channels.SqlStatementChannel;
 import org.qcri.rheem.spark.channels.RddChannel;
 import org.qcri.rheem.spark.execution.SparkExecutor;
 import org.qcri.rheem.spark.platform.SparkPlatform;
 
+import java.io.File;
 import java.util.Collection;
 import java.util.Collections;
 import java.util.List;
@@ -31,18 +32,18 @@ import java.util.Properties;
  *
  * @see SparkObjectFileSink
  */
-public class SparkSqlStatementSource extends SqlStatementSource implements SparkExecutionOperator {
+public class SparkHiveTableSource extends SqlStatementSource implements SparkExecutionOperator {
 
 
-    public SparkSqlStatementSource() {
+    public SparkHiveTableSource() {
         this(null, null);
     }
 
-    public SparkSqlStatementSource(String sqlStamenent, Properties props) {
+    public SparkHiveTableSource(String sqlStamenent, Properties props) {
         super(sqlStamenent, props);
     }
 
-    public SparkSqlStatementSource(SqlStatementSource that) {
+    public SparkHiveTableSource(SqlStatementSource that) {
         super(that);
     }
 
@@ -55,23 +56,18 @@ public class SparkSqlStatementSource extends SqlStatementSource implements Spark
             OptimizationContext.OperatorContext operatorContext) {
 
         RddChannel.Instance output = (RddChannel.Instance) outputs[0];
-        SQLContext sqlContext = new SQLContext(sparkExecutor.sc);
+        String warehouseLocation = new File("spark-warehouse").getAbsolutePath();
+        SparkSession ss = SparkSession
+                .builder()
+                .config(sparkExecutor.sc.getConf())
+                .config("spark.sql.warehouse.dir", warehouseLocation)
+                .enableHiveSupport()
+                .getOrCreate();
 
         final SqlStatementChannel.Instance input = (SqlStatementChannel.Instance) inputs[0];
         Properties props = input.getProps();
 
-
-        JdbcDialects.registerDialect(new HiveDialect());
-
-        Dataset<Row> jdbcDS = sqlContext.read()
-                .format("jdbc")
-                .option("url", props.getProperty("url"))
-                .option("dbtable", "(" + input.getSqlStatement().replaceAll(";$", "") + ") q_alias")
-                .option("user", props.getProperty("user"))
-                .option("password", props.getProperty("password"))
-                .option("driver", props.getProperty("driver"))
-                .option("fetchsize", "200000")
-                .load();
+        Dataset<Row> jdbcDS = ss.sql(input.getSqlStatement().replaceAll(";$", ""));
 
         System.out.println("(" + input.getSqlStatement().replaceAll(";$", "") + ") q_alias");
 //        jdbcDS.explain();
@@ -89,7 +85,6 @@ public class SparkSqlStatementSource extends SqlStatementSource implements Spark
         });
         this.name(rdd);
 
-
         output.accept(rdd, sparkExecutor);
 
         return ExecutionOperator.modelLazyExecution(inputs, outputs, operatorContext);
@@ -98,7 +93,7 @@ public class SparkSqlStatementSource extends SqlStatementSource implements Spark
 
     @Override
     protected ExecutionOperator createCopy() {
-        return new SparkSqlStatementSource(this.getSqlStatement(), this.getProperties());
+        return new SparkHiveTableSource(this.getSqlStatement(), this.getProperties());
     }
 
 
@@ -117,26 +112,5 @@ public class SparkSqlStatementSource extends SqlStatementSource implements Spark
         return false;
     }
 
-    public class HiveDialect extends JdbcDialect {
-
-
-        @Override
-
-        public boolean canHandle(String url) {
-
-            return url.startsWith("jdbc:hive2");
-
-        }
-
-        @Override
-
-        public String quoteIdentifier(String colName) {
-
-            return "" + colName + "";
-
-        }
-
-
-    }
 
 }
