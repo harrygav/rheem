@@ -61,6 +61,7 @@ public class SparkHiveTableSource extends SqlStatementSource implements SparkExe
                 .builder()
                 .config(sparkExecutor.sc.getConf())
                 .config("spark.sql.warehouse.dir", warehouseLocation)
+                .config("spark.files", "file:///hive-site.xml")
                 .enableHiveSupport()
                 .getOrCreate();
 
