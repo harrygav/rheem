@@ -95,7 +95,7 @@ public class ChannelConversions {
     );
 
     public static Collection<ChannelConversion> ALL = Arrays.asList(
-            //SQL_STATEMENT_TO_UNCACHED_RDD,
+            SQL_STATEMENT_TO_UNCACHED_RDD,
             HIVE_TO_UNCACHED_RDD,
             UNCACHED_RDD_TO_CACHED_RDD,
             COLLECTION_TO_BROADCAST,

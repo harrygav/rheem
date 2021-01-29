@@ -614,6 +614,6 @@
         <module>rheem-api</module>
         <module>rheem-profiler</module>
         <module>rheem-extensions</module>
-        <module>rheem-examples</module>
+        <!--<module>rheem-examples</module>-->
     </modules>
 </project>

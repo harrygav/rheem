@@ -9,6 +9,7 @@ import org.apache.spark.sql.jdbc.JdbcDialects;
 import org.qcri.rheem.basic.data.Record;
 import org.qcri.rheem.basic.operators.SqlStatementSource;
 import org.qcri.rheem.core.optimizer.OptimizationContext;
+import org.qcri.rheem.core.optimizer.costs.LoadProfileEstimators;
 import org.qcri.rheem.core.plan.rheemplan.ExecutionOperator;
 import org.qcri.rheem.core.plan.rheemplan.Operator;
 import org.qcri.rheem.core.platform.ChannelDescriptor;
@@ -21,10 +22,7 @@ import org.qcri.rheem.spark.channels.RddChannel;
 import org.qcri.rheem.spark.execution.SparkExecutor;
 import org.qcri.rheem.spark.platform.SparkPlatform;
 
-import java.util.Collection;
-import java.util.Collections;
-import java.util.List;
-import java.util.Properties;
+import java.util.*;
 
 /**
  * {@link Operator} for the {@link SparkPlatform} that creates a sequence file. Consistent with Spark's object files.
@@ -91,10 +89,23 @@ public class SparkSqlStatementSource extends SqlStatementSource implements Spark
 
 
         output.accept(rdd, sparkExecutor);
+        ExecutionLineageNode queryLineageNode = new ExecutionLineageNode(operatorContext);
+        queryLineageNode.add(LoadProfileEstimators.createFromSpecification(
+                "rheem.spark.sqlstatementsource.load.query", sparkExecutor.getConfiguration()));
 
+        queryLineageNode.addPredecessor(input.getLineage());
+        ExecutionLineageNode outputLineageNode = new ExecutionLineageNode(operatorContext);
+        outputLineageNode.add(LoadProfileEstimators.createFromSpecification(
+                "rheem.spark.sqlstatementsource.load.query", sparkExecutor.getConfiguration()
+        ));
+        output.getLineage().addPredecessor(outputLineageNode);
         return ExecutionOperator.modelLazyExecution(inputs, outputs, operatorContext);
     }
 
+    @Override
+    public Collection<String> getLoadProfileEstimatorConfigurationKeys() {
+        return Arrays.asList("rheem.spark.sqlstatementsource.load.main");
+    }
 
     @Override
     protected ExecutionOperator createCopy() {

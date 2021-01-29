@@ -10,6 +10,7 @@ import org.apache.spark.sql.jdbc.JdbcDialects;
 import org.qcri.rheem.basic.data.Record;
 import org.qcri.rheem.basic.operators.SqlStatementSource;
 import org.qcri.rheem.core.optimizer.OptimizationContext;
+import org.qcri.rheem.core.optimizer.costs.LoadProfileEstimators;
 import org.qcri.rheem.core.plan.rheemplan.ExecutionOperator;
 import org.qcri.rheem.core.plan.rheemplan.Operator;
 import org.qcri.rheem.core.platform.ChannelDescriptor;
@@ -22,10 +23,7 @@ import org.qcri.rheem.spark.execution.SparkExecutor;
 import org.qcri.rheem.spark.platform.SparkPlatform;
 
 import java.io.File;
-import java.util.Collection;
-import java.util.Collections;
-import java.util.List;
-import java.util.Properties;
+import java.util.*;
 
 /**
  * {@link Operator} for the {@link SparkPlatform} that creates a sequence file. Consistent with Spark's object files.
@@ -61,6 +59,32 @@ public class SparkHiveTableSource extends SqlStatementSource implements SparkExe
                 .builder()
                 .config(sparkExecutor.sc.getConf())
                 .config("spark.sql.warehouse.dir", warehouseLocation)
+                .config("hbase.zookeeper.quorum", "zoo")
+                .config("hive.metastore.uris", "thrift://hive-metastore:9083")
+                .config("javax.jdo.option.ConnectionUserName", "hive")
+                .config("hive.server2.enable.doAs", "false")
+                .config("javax.jdo.option.ConnectionURL", "jdbc:postgresql://postgres-metastore/metastore")
+                .config("datanucleus.autoCreateSchema", "false")
+                .config("hive.metastore.event.db.notification.api.auth", "false")
+                .config("javax.jdo.option.ConnectionDriverName", "org.postgresql.Driver")
+                .config("javax.jdo.option.ConnectionPassword", "hivePW123")
+                .config("spark.driver.extraClassPath", "hdfs:///jars/hive-hbase-handler-2.3.8.jar,hdfs:///jars/hbase-client-2.2.6.jar,hdfs:///jars/hbase-server-2.2.6.jar,hdfs:///jars/hbase-protocol-shaded-2.2.6.jar,hdfs:///jars/hbase-common-2.2.6.jar,hdfs:///jars/hbase-mapreduce-2.2.6.jar,hdfs:///jars/hbase-shaded-miscellaneous-2.2.1.jar,hdfs:///jars/hbase-shaded-protobuf-2.2.1.jar,hdfs:///jars/hbase-shaded-netty-2.2.1.jar,hdfs:///jars/htrace-core4-4.2.0-incubating.jar,hdfs:///jars/hbase-protocol-2.2.6.jar")
+                .config("hbase.cluster.distributed", "false")
+                .config("hbase.tmp.dir", "./tmp")
+                .config("hbase.unsafe.stream.capability.enforce", "false")
+                .config("hbase.rootdir", "hdfs:///hbase")
+                .config("hbase.master.port", "16000")
+                .config("hbase.cluster.distributed", "true")
+                .config("hbase.manages.zk", "false")
+                .config("hbase.regionserver.info.port", "16030")
+                .config("zookeeper.session.timeout", "120000")
+                .config("hbase.master.info.port", "16010")
+                .config("hbase.zookeeper.quorum", "zoo")
+                .config("hbase.master", "hbase-master:16000")
+                .config("hbase.zookeeper.property.tickTime", "6000")
+                .config("hbase.regionserver.port", "16020")
+                .config("hbase.master.hostname", "hbase-master")
+
                 .config("spark.files", "file:///hive-site.xml")
                 .enableHiveSupport()
                 .getOrCreate();
@@ -88,7 +112,22 @@ public class SparkHiveTableSource extends SqlStatementSource implements SparkExe
 
         output.accept(rdd, sparkExecutor);
 
+        ExecutionLineageNode queryLineageNode = new ExecutionLineageNode(operatorContext);
+        queryLineageNode.add(LoadProfileEstimators.createFromSpecification(
+                "rheem.spark.hivetablesource.load.query", sparkExecutor.getConfiguration()));
+
+        queryLineageNode.addPredecessor(input.getLineage());
+        ExecutionLineageNode outputLineageNode = new ExecutionLineageNode(operatorContext);
+        outputLineageNode.add(LoadProfileEstimators.createFromSpecification(
+                "rheem.spark.hivetablesource.load.query", sparkExecutor.getConfiguration()
+        ));
+        output.getLineage().addPredecessor(outputLineageNode);
         return ExecutionOperator.modelLazyExecution(inputs, outputs, operatorContext);
+    }
+
+    @Override
+    public Collection<String> getLoadProfileEstimatorConfigurationKeys() {
+        return Arrays.asList("rheem.spark.hivetablesource.load.main");
     }
 
 
