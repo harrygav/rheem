@@ -89,7 +89,7 @@ public class SparkSqlStatementSource extends SqlStatementSource implements Spark
 
 
         output.accept(rdd, sparkExecutor);
-        ExecutionLineageNode queryLineageNode = new ExecutionLineageNode(operatorContext);
+        /*ExecutionLineageNode queryLineageNode = new ExecutionLineageNode(operatorContext);
         queryLineageNode.add(LoadProfileEstimators.createFromSpecification(
                 "rheem.spark.sqlstatementsource.load.query", sparkExecutor.getConfiguration()));
 
@@ -98,14 +98,14 @@ public class SparkSqlStatementSource extends SqlStatementSource implements Spark
         outputLineageNode.add(LoadProfileEstimators.createFromSpecification(
                 "rheem.spark.sqlstatementsource.load.query", sparkExecutor.getConfiguration()
         ));
-        output.getLineage().addPredecessor(outputLineageNode);
+        output.getLineage().addPredecessor(outputLineageNode);*/
         return ExecutionOperator.modelLazyExecution(inputs, outputs, operatorContext);
     }
 
-    @Override
+    /*@Override
     public Collection<String> getLoadProfileEstimatorConfigurationKeys() {
         return Arrays.asList("rheem.spark.sqlstatementsource.load.main");
-    }
+    }*/
 
     @Override
     protected ExecutionOperator createCopy() {

@@ -130,20 +130,6 @@ public class SparkPlatform extends Platform {
             this.registerJarIfNotNull(ReflectionUtils.getDeclaringJar(SparkPlatform.class)); // rheem-spark
             this.registerJarIfNotNull(ReflectionUtils.getDeclaringJar(RheemBasic.class)); // rheem-basic
             this.registerJarIfNotNull(ReflectionUtils.getDeclaringJar(RheemContext.class)); // rheem-core
-            this.registerJarIfNotNull(ReflectionUtils.getDeclaringJar(SparkHiveTableSource.class));
-            this.registerJarIfNotNull(ReflectionUtils.getDeclaringJar(SparkSqlStatementSource.class));
-            this.registerJarIfNotNull(ReflectionUtils.getDeclaringJar(SparkTableSink.class));
-            this.registerJarIfNotNull("hdfs://namenode:9000/jars/hive-hbase-handler-2.3.8.jar");
-            this.registerJarIfNotNull("hdfs://namenode:9000/jars/hbase-client-2.2.6.jar");
-            this.registerJarIfNotNull("hdfs://namenode:9000/jars/hbase-server-2.2.6.jar");
-            this.registerJarIfNotNull("hdfs://namenode:9000/jars/hbase-protocol-shaded-2.2.6.jar");
-            this.registerJarIfNotNull("hdfs://namenode:9000/jars/hbase-common-2.2.6.jar");
-            this.registerJarIfNotNull("hdfs://namenode:9000/jars/hbase-mapreduce-2.2.6.jar");
-            this.registerJarIfNotNull("hdfs://namenode:9000/jars/hbase-shaded-miscellaneous-2.2.1.jar");
-            this.registerJarIfNotNull("hdfs://namenode:9000/jars/hbase-shaded-protobuf-2.2.1.jar");
-            this.registerJarIfNotNull("hdfs://namenode:9000/jars/hbase-shaded-netty-2.2.1.jar");
-            this.registerJarIfNotNull("hdfs://namenode:9000/jars/htrace-core4-4.2.0-incubating.jar");
-            this.registerJarIfNotNull("hdfs://namenode:9000/jars/hbase-protocol-2.2.6.jar");
 
             final Set<String> udfJarPaths = job.getUdfJarPaths();
             if (udfJarPaths.isEmpty()) {

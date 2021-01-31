@@ -68,7 +68,6 @@ public class SparkHiveTableSource extends SqlStatementSource implements SparkExe
                 .config("hive.metastore.event.db.notification.api.auth", "false")
                 .config("javax.jdo.option.ConnectionDriverName", "org.postgresql.Driver")
                 .config("javax.jdo.option.ConnectionPassword", "hivePW123")
-                .config("spark.driver.extraClassPath", "hdfs:///jars/hive-hbase-handler-2.3.8.jar,hdfs:///jars/hbase-client-2.2.6.jar,hdfs:///jars/hbase-server-2.2.6.jar,hdfs:///jars/hbase-protocol-shaded-2.2.6.jar,hdfs:///jars/hbase-common-2.2.6.jar,hdfs:///jars/hbase-mapreduce-2.2.6.jar,hdfs:///jars/hbase-shaded-miscellaneous-2.2.1.jar,hdfs:///jars/hbase-shaded-protobuf-2.2.1.jar,hdfs:///jars/hbase-shaded-netty-2.2.1.jar,hdfs:///jars/htrace-core4-4.2.0-incubating.jar,hdfs:///jars/hbase-protocol-2.2.6.jar")
                 .config("hbase.cluster.distributed", "false")
                 .config("hbase.tmp.dir", "./tmp")
                 .config("hbase.unsafe.stream.capability.enforce", "false")
@@ -112,7 +111,7 @@ public class SparkHiveTableSource extends SqlStatementSource implements SparkExe
 
         output.accept(rdd, sparkExecutor);
 
-        ExecutionLineageNode queryLineageNode = new ExecutionLineageNode(operatorContext);
+        /*ExecutionLineageNode queryLineageNode = new ExecutionLineageNode(operatorContext);
         queryLineageNode.add(LoadProfileEstimators.createFromSpecification(
                 "rheem.spark.hivetablesource.load.query", sparkExecutor.getConfiguration()));
 
@@ -121,14 +120,15 @@ public class SparkHiveTableSource extends SqlStatementSource implements SparkExe
         outputLineageNode.add(LoadProfileEstimators.createFromSpecification(
                 "rheem.spark.hivetablesource.load.query", sparkExecutor.getConfiguration()
         ));
-        output.getLineage().addPredecessor(outputLineageNode);
+        output.getLineage().addPredecessor(outputLineageNode);*/
+        output.getMeasuredCardinality();
         return ExecutionOperator.modelLazyExecution(inputs, outputs, operatorContext);
     }
 
-    @Override
+    /*@Override
     public Collection<String> getLoadProfileEstimatorConfigurationKeys() {
         return Arrays.asList("rheem.spark.hivetablesource.load.main");
-    }
+    }*/
 
 
     @Override
